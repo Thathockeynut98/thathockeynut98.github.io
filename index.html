@@ -326,7 +326,9 @@
     try {
       firebase.initializeApp(firebaseConfig);
     } catch(e) { console.error("Firebase init error", e); }
-    const database = firebase.database();
+    
+    // Explicitly bind the database URL to enforce connection routing
+    const database = firebase.database("https://longdistance-330d0-default-rtdb.firebaseio.com");
 
     // --- GLOBAL VARIABLES ---
     let currentRoom = "main-room";
@@ -602,4 +604,146 @@
       grid.innerHTML = '';
       photoGallery.forEach(url => {
         const card = document.createElement('div');
-        card.className = "glass-card rounded-2xl overflow-hidden border border-slate-800 aspect-
+        card.className = "glass-card rounded-2xl overflow-hidden border border-slate-800 aspect-video";
+        card.innerHTML = `<img src="${url}" class="w-full h-full object-cover">`;
+        grid.appendChild(card);
+      });
+    }
+
+    function addPhotoToGallery() {
+      const input = document.getElementById('photoUrlInput');
+      if (!input || !input.value.trim()) return;
+      photoGallery.push(input.value.trim());
+      input.value = '';
+      renderPhotoGallery();
+      database.ref(`rooms/${currentRoom}/photos`).set(photoGallery);
+    }
+
+    function sendBedtimeNote() {
+      const input = document.getElementById('bedtimeNoteInput');
+      if (!input || !input.value.trim()) return;
+      sendChatMessageData(`🌙 Bedtime Note: ${input.value.trim()}`);
+      input.value = '';
+      switchTab('watch');
+    }
+
+    // --- 5. CHAT & NAVIGATION TABS ---
+    function switchTab(tabId) {
+      ['watch', 'sketch', 'bedtime', 'photowall'].forEach(t => {
+        const view = document.getElementById(`view-${t}`);
+        const tab = document.getElementById(`tab-${t}`);
+        if(view) view.classList.add('hidden');
+        if(tab) tab.className = "nav-tab px-4 py-1.5 rounded-lg text-sm font-medium transition-all text-slate-400";
+      });
+      const activeView = document.getElementById(`view-${tabId}`);
+      const activeTab = document.getElementById(`tab-${tabId}`);
+      if(activeView) activeView.classList.remove('hidden');
+      if(activeTab) activeTab.className = "nav-tab active px-4 py-1.5 rounded-lg text-sm font-medium bg-indigo-600 text-white";
+
+      if (tabId === 'sketch') {
+        setTimeout(() => {
+          const canvas = document.getElementById('sketchCanvas');
+          if (canvas && canvas.parentElement) {
+            canvas.width = canvas.parentElement.clientWidth || 800;
+            canvas.height = canvas.parentElement.clientHeight || 500;
+          }
+        }, 50);
+      }
+    }
+
+    function sendChatMessage(e) {
+      if (e) e.preventDefault();
+      const input = document.getElementById('chatInput');
+      if (!input || !input.value.trim()) return;
+      sendChatMessageData(input.value.trim());
+      input.value = '';
+    }
+
+    function sendChatMessageData(text) {
+      database.ref(`rooms/${currentRoom}/chat`).push({ user: currentUser, text: text, time: Date.now() });
+    }
+
+    function copyShareLink() {
+      const url = `${window.location.origin}${window.location.pathname}#room=${currentRoom}`;
+      navigator.clipboard.writeText(url);
+      alert(`Room Link Copied! Share this exact link with your partner:\n${url}`);
+    }
+
+    function openRoomModal() { const m = document.getElementById('roomModal'); if(m) m.classList.remove('hidden'); }
+    function closeRoomModal() { const m = document.getElementById('roomModal'); if(m) m.classList.add('hidden'); }
+
+    function applyRoomChange() {
+      const room = document.getElementById('modalRoomInput').value.trim();
+      const name = document.getElementById('modalNameInput').value.trim();
+      if (room) currentRoom = room.toLowerCase().replace(/\s+/g, '-');
+      if (name) currentUser = name;
+      window.location.hash = `room=${currentRoom}`;
+      closeRoomModal();
+      window.location.reload();
+    }
+
+    function sendHeartbeat() { sendChatMessageData("❤️ Sent a heartbeat pulse!"); }
+    function toggleVoiceCall() { alert("Voice Channel Active"); }
+    function updateMoodStatus() {
+      const mood = document.getElementById('userMoodInput').value.trim();
+      if (mood) sendChatMessageData(`✨ Status update: ${mood}`);
+    }
+
+    // --- 6. REALTIME DATABASE LISTENERS ---
+    function initFirebaseSync() {
+      // Chat Stream
+      database.ref(`rooms/${currentRoom}/chat`).on('value', (snapshot) => {
+        const stream = document.getElementById('chatStream');
+        if (!stream) return;
+        stream.innerHTML = '';
+        const data = snapshot.val();
+        if (data) {
+          Object.values(data).forEach(msg => {
+            const div = document.createElement('div');
+            div.className = "bg-slate-900/80 p-2.5 rounded-xl border border-slate-800 text-xs space-y-1";
+            div.innerHTML = `<div class="font-semibold text-indigo-300">${msg.user}</div><div class="text-slate-200">${msg.text}</div>`;
+            stream.appendChild(div);
+          });
+          stream.scrollTop = stream.scrollHeight;
+        }
+      });
+
+      // Video Stream
+      database.ref(`rooms/${currentRoom}/videoState`).on('value', (snapshot) => {
+        const state = snapshot.val();
+        if (!state || isSyncing) return;
+        isSyncing = true;
+        if (state.type === 'youtube' && ytPlayer && isYoutubeReady) {
+          ytPlayer.loadVideoById(state.videoId, state.currentTime);
+          if (state.isPlaying) ytPlayer.playVideo(); else ytPlayer.pauseVideo();
+        }
+        setTimeout(() => { isSyncing = false; }, 1000);
+      });
+
+      // Canvas Strokes
+      database.ref(`rooms/${currentRoom}/canvasStrokes`).on('value', (snapshot) => {
+        const strokes = snapshot.val();
+        if (strokes) {
+          Object.values(strokes).forEach(s => {
+            if (s.action === 'clear') {
+              const canvas = document.getElementById('sketchCanvas');
+              if (canvasCtx && canvas) canvasCtx.clearRect(0, 0, canvas.width, canvas.height);
+            } else if (s.x0 !== undefined) {
+              drawLineLocally(s.x0, s.y0, s.x1, s.y1, s.color, s.size);
+            }
+          });
+        }
+      });
+
+      // Photos
+      database.ref(`rooms/${currentRoom}/photos`).on('value', (snapshot) => {
+        const photos = snapshot.val();
+        if (photos && Array.isArray(photos)) {
+          photoGallery = photos;
+          renderPhotoGallery();
+        }
+      });
+    }
+  </script>
+</body>
+</html>
