@@ -38,13 +38,13 @@
       background: radial-gradient(circle at top left, #0f172a, #0b0f19, #030712);
     }
     .glass-panel {
-      background: rgba(15, 23, 42, 0.75);
+      background: rgba(15, 23, 42, 0.85);
       backdrop-filter: blur(16px);
       -webkit-backdrop-filter: blur(16px);
       border: 1px solid rgba(255, 255, 255, 0.08);
     }
     .glass-card {
-      background: rgba(30, 41, 59, 0.55);
+      background: rgba(30, 41, 59, 0.65);
       backdrop-filter: blur(12px);
       border: 1px solid rgba(255, 255, 255, 0.06);
     }
@@ -61,13 +61,6 @@
     }
     ::-webkit-scrollbar-thumb:hover {
       background: rgba(99, 102, 241, 0.7);
-    }
-    .pulse-glow {
-      animation: pulseGlow 2s infinite;
-    }
-    @keyframes pulseGlow {
-      0%, 100% { box-shadow: 0 0 15px rgba(99, 102, 241, 0.3); }
-      50% { box-shadow: 0 0 25px rgba(99, 102, 241, 0.6); }
     }
   </style>
 </head>
@@ -87,45 +80,45 @@
             SyncSpace <span class="text-[10px] bg-indigo-500/20 text-indigo-300 border border-indigo-500/30 px-2 py-0.5 rounded-full font-normal">v2.5</span>
           </h1>
           <p class="text-xs text-slate-400 flex items-center gap-1.5">
-            <span class="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
-            Room Code: <span id="currentRoomDisplay" class="font-mono text-indigo-300 font-semibold uppercase">MAIN-ROOM</span>
+            <span id="syncStatusDot" class="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
+            Room Code: <span id="currentRoomDisplay" class="font-mono text-indigo-300 font-semibold uppercase">ROOM-LOAD</span>
           </p>
         </div>
       </div>
 
       <!-- Center View Tabs -->
       <nav class="hidden md:flex items-center gap-1 bg-slate-900/80 p-1 rounded-xl border border-slate-800/80">
-        <button onclick="switchTab('watch')" id="tab-watch" class="nav-tab active px-4 py-1.5 rounded-lg text-sm font-medium transition-all flex items-center gap-2 bg-indigo-600 text-white shadow-sm">
+        <button onclick="window.switchTab('watch')" id="tab-watch" class="nav-tab active px-4 py-1.5 rounded-lg text-sm font-medium transition-all flex items-center gap-2 bg-indigo-600 text-white shadow-sm">
           <i class="fa-solid fa-circle-play"></i> Watch Together
         </button>
-        <button onclick="switchTab('sketch')" id="tab-sketch" class="nav-tab px-4 py-1.5 rounded-lg text-sm font-medium transition-all flex items-center gap-2 text-slate-400 hover:text-slate-200">
+        <button onclick="window.switchTab('sketch')" id="tab-sketch" class="nav-tab px-4 py-1.5 rounded-lg text-sm font-medium transition-all flex items-center gap-2 text-slate-400 hover:text-slate-200">
           <i class="fa-solid fa-paintbrush"></i> Canvas & Notes
         </button>
-        <button onclick="switchTab('bedtime')" id="tab-bedtime" class="nav-tab px-4 py-1.5 rounded-lg text-sm font-medium transition-all flex items-center gap-2 text-slate-400 hover:text-slate-200">
+        <button onclick="window.switchTab('bedtime')" id="tab-bedtime" class="nav-tab px-4 py-1.5 rounded-lg text-sm font-medium transition-all flex items-center gap-2 text-slate-400 hover:text-slate-200">
           <i class="fa-solid fa-moon"></i> Sleep Zone
         </button>
-        <button onclick="switchTab('photowall')" id="tab-photowall" class="nav-tab px-4 py-1.5 rounded-lg text-sm font-medium transition-all flex items-center gap-2 text-slate-400 hover:text-slate-200">
+        <button onclick="window.switchTab('photowall')" id="tab-photowall" class="nav-tab px-4 py-1.5 rounded-lg text-sm font-medium transition-all flex items-center gap-2 text-slate-400 hover:text-slate-200">
           <i class="fa-solid fa-images"></i> Photo Gallery
         </button>
       </nav>
 
       <!-- Quick Room Actions & Controls -->
       <div class="flex items-center gap-2 md:gap-3">
-        <button onclick="sendHeartbeat()" class="p-2.5 rounded-xl bg-pink-500/10 hover:bg-pink-500/20 text-pink-400 border border-pink-500/20 transition hover:scale-105" title="Send Heartbeat Pulse">
+        <button onclick="window.sendHeartbeat()" class="p-2.5 rounded-xl bg-pink-500/10 hover:bg-pink-500/20 text-pink-400 border border-pink-500/20 transition hover:scale-105" title="Send Heartbeat Pulse">
           <i class="fa-solid fa-heart animate-pulse"></i>
         </button>
 
-        <button id="voiceToggleBtn" onclick="toggleVoiceCall()" class="px-3 py-1.5 rounded-xl text-xs md:text-sm font-medium bg-slate-800 hover:bg-slate-700 text-slate-300 border border-slate-700 transition flex items-center gap-2">
+        <button id="voiceToggleBtn" onclick="window.toggleVoiceCall()" class="px-3 py-1.5 rounded-xl text-xs md:text-sm font-medium bg-slate-800 hover:bg-slate-700 text-slate-300 border border-slate-700 transition flex items-center gap-2">
           <i id="voiceIcon" class="fa-solid fa-microphone-slash text-rose-400"></i>
           <span id="voiceStatusText" class="hidden sm:inline">Voice Call</span>
         </button>
 
-        <button onclick="copyShareLink()" class="px-3.5 py-1.5 rounded-xl text-xs md:text-sm font-medium bg-indigo-600 hover:bg-indigo-500 text-white shadow-md shadow-indigo-600/30 transition flex items-center gap-2">
+        <button onclick="window.copyShareLink()" class="px-3.5 py-1.5 rounded-xl text-xs md:text-sm font-medium bg-indigo-600 hover:bg-indigo-500 text-white shadow-md shadow-indigo-600/30 transition flex items-center gap-2">
           <i class="fa-solid fa-share-nodes"></i>
           <span class="hidden sm:inline">Share Link</span>
         </button>
 
-        <button onclick="openRoomModal()" class="p-2 rounded-xl text-slate-400 hover:text-white hover:bg-slate-800 transition" title="Room Options">
+        <button onclick="window.openRoomModal()" class="p-2 rounded-xl text-slate-400 hover:text-white hover:bg-slate-800 transition" title="Room Options">
           <i class="fa-solid fa-right-to-bracket text-lg"></i>
         </button>
       </div>
@@ -140,7 +133,7 @@
           <h2 class="font-semibold text-slate-200 flex items-center gap-2 text-sm uppercase tracking-wider">
             <i class="fa-solid fa-sliders text-indigo-400"></i> Ambient Soundscapes
           </h2>
-          <button id="masterMuteBtn" onclick="toggleMasterMute()" class="p-1.5 rounded-lg text-slate-400 hover:text-white hover:bg-slate-800 transition text-xs" title="Mute/Unmute All">
+          <button id="masterMuteBtn" onclick="window.toggleMasterMute()" class="p-1.5 rounded-lg text-slate-400 hover:text-white hover:bg-slate-800 transition text-xs" title="Mute/Unmute All">
             <i id="masterMuteIcon" class="fa-solid fa-volume-high"></i>
           </button>
         </div>
@@ -155,10 +148,10 @@
               <span id="timerDisplay" class="font-mono text-indigo-300 font-semibold">Off</span>
             </div>
             <div class="grid grid-cols-4 gap-1.5">
-              <button onclick="setSoundTimer(15)" class="py-1 px-2 rounded bg-slate-800 hover:bg-indigo-600/30 text-[11px] text-slate-300 transition">15m</button>
-              <button onclick="setSoundTimer(30)" class="py-1 px-2 rounded bg-slate-800 hover:bg-indigo-600/30 text-[11px] text-slate-300 transition">30m</button>
-              <button onclick="setSoundTimer(60)" class="py-1 px-2 rounded bg-slate-800 hover:bg-indigo-600/30 text-[11px] text-slate-300 transition">60m</button>
-              <button onclick="setSoundTimer(0)" class="py-1 px-2 rounded bg-slate-800 hover:bg-rose-600/30 text-[11px] text-slate-300 transition">Off</button>
+              <button onclick="window.setSoundTimer(15)" class="py-1 px-2 rounded bg-slate-800 hover:bg-indigo-600/30 text-[11px] text-slate-300 transition">15m</button>
+              <button onclick="window.setSoundTimer(30)" class="py-1 px-2 rounded bg-slate-800 hover:bg-indigo-600/30 text-[11px] text-slate-300 transition">30m</button>
+              <button onclick="window.setSoundTimer(60)" class="py-1 px-2 rounded bg-slate-800 hover:bg-indigo-600/30 text-[11px] text-slate-300 transition">60m</button>
+              <button onclick="window.setSoundTimer(0)" class="py-1 px-2 rounded bg-slate-800 hover:bg-rose-600/30 text-[11px] text-slate-300 transition">Off</button>
             </div>
           </div>
 
@@ -173,7 +166,7 @@
           <label class="text-xs font-semibold text-slate-400 uppercase tracking-wider mb-2 block">Set Room Status / Mood</label>
           <div class="flex items-center gap-2">
             <input type="text" id="userMoodInput" placeholder="Study time, chillin'..." class="bg-slate-900 border border-slate-800 text-xs text-slate-200 px-3 py-2 rounded-xl flex-1 focus:outline-none focus:border-indigo-500">
-            <button onclick="updateMoodStatus()" class="p-2 bg-indigo-600 hover:bg-indigo-500 text-white rounded-xl text-xs transition">
+            <button onclick="window.updateMoodStatus()" class="p-2 bg-indigo-600 hover:bg-indigo-500 text-white rounded-xl text-xs transition">
               <i class="fa-solid fa-check"></i>
             </button>
           </div>
@@ -185,10 +178,10 @@
 
         <!-- Mobile Navigation Switcher -->
         <div class="flex md:hidden items-center justify-around bg-slate-900 border-b border-slate-800 p-2 shrink-0 text-xs">
-          <button onclick="switchTab('watch')" id="mob-tab-watch" class="px-3 py-1.5 rounded-lg font-medium bg-indigo-600 text-white">Watch</button>
-          <button onclick="switchTab('sketch')" id="mob-tab-sketch" class="px-3 py-1.5 rounded-lg font-medium text-slate-400">Sketchpad</button>
-          <button onclick="switchTab('bedtime')" id="mob-tab-bedtime" class="px-3 py-1.5 rounded-lg font-medium text-slate-400">Sleep</button>
-          <button onclick="switchTab('photowall')" id="mob-tab-photowall" class="px-3 py-1.5 rounded-lg font-medium text-slate-400">Photos</button>
+          <button onclick="window.switchTab('watch')" id="mob-tab-watch" class="px-3 py-1.5 rounded-lg font-medium bg-indigo-600 text-white">Watch</button>
+          <button onclick="window.switchTab('sketch')" id="mob-tab-sketch" class="px-3 py-1.5 rounded-lg font-medium text-slate-400">Sketchpad</button>
+          <button onclick="window.switchTab('bedtime')" id="mob-tab-bedtime" class="px-3 py-1.5 rounded-lg font-medium text-slate-400">Sleep</button>
+          <button onclick="window.switchTab('photowall')" id="mob-tab-photowall" class="px-3 py-1.5 rounded-lg font-medium text-slate-400">Photos</button>
         </div>
 
         <!-- View 1: Universal Watch Together (YouTube + Native HTML5 Video) -->
@@ -200,7 +193,7 @@
                 <i class="fa-solid fa-link absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400"></i>
                 <input type="text" id="videoUrlInput" placeholder="Paste YouTube link OR direct video URL (.mp4, .webm, .m3u8)" class="w-full bg-slate-900 border border-slate-800 text-slate-200 text-sm pl-10 pr-4 py-2.5 rounded-xl focus:outline-none focus:border-indigo-500">
               </div>
-              <button onclick="loadUniversalVideo()" class="px-4 py-2.5 bg-indigo-600 hover:bg-indigo-500 text-white rounded-xl text-sm font-medium transition shrink-0 flex items-center justify-center gap-2">
+              <button onclick="window.loadUniversalVideo()" class="px-4 py-2.5 bg-indigo-600 hover:bg-indigo-500 text-white rounded-xl text-sm font-medium transition shrink-0 flex items-center justify-center gap-2">
                 <i class="fa-solid fa-satellite-dish"></i> Sync Stream
               </button>
             </div>
@@ -208,9 +201,9 @@
             <!-- Quick Sync Presets -->
             <div class="w-full lg:w-auto flex items-center gap-1.5 overflow-x-auto pb-1 lg:pb-0 text-xs">
               <span class="text-slate-400 font-medium shrink-0">Presets:</span>
-              <button onclick="loadPreset('youtube', 'jfKfPfyJRdk')" class="px-2.5 py-1 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 transition shrink-0"><i class="fa-brands fa-youtube text-red-400"></i> Lofi Girl</button>
-              <button onclick="loadPreset('youtube', 'TURbeWK2wwg')" class="px-2.5 py-1 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 transition shrink-0"><i class="fa-brands fa-youtube text-red-400"></i> Rain Stream</button>
-              <button onclick="loadPreset('mp4', 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4')" class="px-2.5 py-1 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 transition shrink-0"><i class="fa-solid fa-file-video text-indigo-400"></i> MP4 Demo</button>
+              <button onclick="window.loadPreset('youtube', 'jfKfPfyJRdk')" class="px-2.5 py-1 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 transition shrink-0"><i class="fa-brands fa-youtube text-red-400"></i> Lofi Girl</button>
+              <button onclick="window.loadPreset('youtube', 'TURbeWK2wwg')" class="px-2.5 py-1 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 transition shrink-0"><i class="fa-brands fa-youtube text-red-400"></i> Rain Stream</button>
+              <button onclick="window.loadPreset('mp4', 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4')" class="px-2.5 py-1 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 transition shrink-0"><i class="fa-solid fa-file-video text-indigo-400"></i> MP4 Demo</button>
             </div>
           </div>
 
@@ -238,8 +231,8 @@
           <div class="glass-card p-3 rounded-2xl border border-slate-800 mb-3 flex flex-wrap items-center justify-between gap-3">
             <div class="flex items-center gap-2">
               <label class="text-xs text-slate-400 font-medium">Tool:</label>
-              <button onclick="setCanvasTool('pen')" id="tool-pen" class="p-2 bg-indigo-600 text-white rounded-lg text-xs transition"><i class="fa-solid fa-pen"></i> Pen</button>
-              <button onclick="setCanvasTool('eraser')" id="tool-eraser" class="p-2 bg-slate-800 text-slate-300 hover:bg-slate-700 rounded-lg text-xs transition"><i class="fa-solid fa-eraser"></i> Eraser</button>
+              <button onclick="window.setCanvasTool('pen')" id="tool-pen" class="p-2 bg-indigo-600 text-white rounded-lg text-xs transition"><i class="fa-solid fa-pen"></i> Pen</button>
+              <button onclick="window.setCanvasTool('eraser')" id="tool-eraser" class="p-2 bg-slate-800 text-slate-300 hover:bg-slate-700 rounded-lg text-xs transition"><i class="fa-solid fa-eraser"></i> Eraser</button>
               
               <div class="h-4 w-px bg-slate-700 mx-1"></div>
               
@@ -253,7 +246,7 @@
             </div>
 
             <div class="flex items-center gap-2">
-              <button onclick="clearCanvas()" class="px-3 py-1.5 bg-rose-500/20 text-rose-300 hover:bg-rose-500/30 rounded-xl text-xs font-medium border border-rose-500/30 transition flex items-center gap-1.5">
+              <button onclick="window.clearCanvas()" class="px-3 py-1.5 bg-rose-500/20 text-rose-300 hover:bg-rose-500/30 rounded-xl text-xs font-medium border border-rose-500/30 transition flex items-center gap-1.5">
                 <i class="fa-solid fa-trash"></i> Clear Canvas
               </button>
             </div>
@@ -279,18 +272,18 @@
             <div class="bg-slate-900/80 p-4 rounded-xl border border-slate-800 text-left space-y-3">
               <label class="text-xs font-semibold text-slate-300 uppercase block">Send Goodnight / Morning Note</label>
               <textarea id="bedtimeNoteInput" rows="2" placeholder="Sweet dreams! See you tomorrow at 9 AM..." class="w-full bg-slate-950 border border-slate-800 text-xs text-slate-200 p-3 rounded-xl focus:outline-none focus:border-indigo-500"></textarea>
-              <button onclick="sendBedtimeNote()" class="w-full py-2 bg-indigo-600 hover:bg-indigo-500 text-white rounded-xl text-xs font-medium transition flex items-center justify-center gap-2">
+              <button onclick="window.sendBedtimeNote()" class="w-full py-2 bg-indigo-600 hover:bg-indigo-500 text-white rounded-xl text-xs font-medium transition flex items-center justify-center gap-2">
                 <i class="fa-solid fa-paper-plane"></i> Post Note
               </button>
             </div>
 
             <!-- Sleep Timer Fast Triggers -->
             <div class="pt-2 grid grid-cols-2 gap-3">
-              <button onclick="activateSleepMode('rain', 30)" class="p-4 rounded-xl bg-slate-900 border border-slate-800 hover:border-indigo-500/50 transition text-left">
+              <button onclick="window.activateSleepMode('rain', 30)" class="p-4 rounded-xl bg-slate-900 border border-slate-800 hover:border-indigo-500/50 transition text-left">
                 <div class="font-semibold text-slate-200 text-sm">30 Min Rain Sleep</div>
                 <div class="text-xs text-slate-500 mt-1">Gentle rainfall & sleep timer</div>
               </button>
-              <button onclick="activateSleepMode('space', 60)" class="p-4 rounded-xl bg-slate-900 border border-slate-800 hover:border-indigo-500/50 transition text-left">
+              <button onclick="window.activateSleepMode('space', 60)" class="p-4 rounded-xl bg-slate-900 border border-slate-800 hover:border-indigo-500/50 transition text-left">
                 <div class="font-semibold text-slate-200 text-sm">60 Min Deep Space</div>
                 <div class="text-xs text-slate-500 mt-1">Ambient frequency meditation</div>
               </button>
@@ -303,7 +296,7 @@
           <div class="glass-card p-4 rounded-2xl border border-slate-800 flex flex-col sm:flex-row gap-3 items-center justify-between">
             <div class="w-full sm:w-auto flex-1 flex gap-2">
               <input type="text" id="photoUrlInput" placeholder="Paste image link URL (e.g. https://images.unsplash.com/...)" class="w-full bg-slate-900 border border-slate-800 text-slate-200 text-sm px-4 py-2 rounded-xl focus:outline-none focus:border-indigo-500">
-              <button onclick="addPhotoToGallery()" class="px-4 py-2 bg-indigo-600 hover:bg-indigo-500 text-white rounded-xl text-sm font-medium transition shrink-0 flex items-center gap-1.5">
+              <button onclick="window.addPhotoToGallery()" class="px-4 py-2 bg-indigo-600 hover:bg-indigo-500 text-white rounded-xl text-sm font-medium transition shrink-0 flex items-center gap-1.5">
                 <i class="fa-solid fa-plus"></i> Add Photo
               </button>
             </div>
@@ -332,7 +325,7 @@
         </div>
 
         <!-- Chat Input -->
-        <form onsubmit="sendChatMessage(event)" class="p-3 border-t border-slate-800 bg-slate-950/40 flex items-center gap-2">
+        <form onsubmit="window.sendChatMessage(event)" class="p-3 border-t border-slate-800 bg-slate-950/40 flex items-center gap-2">
           <input type="text" id="chatInput" placeholder="Type a message..." class="bg-slate-900 border border-slate-800 text-xs text-slate-200 px-3 py-2.5 rounded-xl flex-1 focus:outline-none focus:border-indigo-500">
           <button type="submit" class="p-2.5 bg-indigo-600 hover:bg-indigo-500 text-white rounded-xl text-xs transition">
             <i class="fa-solid fa-paper-plane"></i>
@@ -350,13 +343,13 @@
         <h3 class="text-lg font-bold text-white flex items-center gap-2">
           <i class="fa-solid fa-door-open text-indigo-400"></i> Enter SyncSpace Room
         </h3>
-        <button onclick="closeRoomModal()" class="text-slate-400 hover:text-white"><i class="fa-solid fa-xmark"></i></button>
+        <button onclick="window.closeRoomModal()" class="text-slate-400 hover:text-white"><i class="fa-solid fa-xmark"></i></button>
       </div>
 
       <div class="space-y-3">
         <div>
           <label class="text-xs font-semibold text-slate-400 uppercase block mb-1">Room Code / ID</label>
-          <input type="text" id="modalRoomInput" placeholder="e.g. study-hub-123" class="w-full bg-slate-900 border border-slate-800 text-sm text-slate-200 px-3.5 py-2.5 rounded-xl focus:outline-none focus:border-indigo-500">
+          <input type="text" id="modalRoomInput" placeholder="e.g. ROOM-4829" class="w-full bg-slate-900 border border-slate-800 text-sm text-slate-200 px-3.5 py-2.5 rounded-xl focus:outline-none focus:border-indigo-500">
         </div>
         <div>
           <label class="text-xs font-semibold text-slate-400 uppercase block mb-1">Your Display Name</label>
@@ -365,7 +358,7 @@
       </div>
 
       <div class="flex gap-2 pt-2">
-        <button onclick="applyRoomChange()" class="w-full py-2.5 bg-indigo-600 hover:bg-indigo-500 text-white rounded-xl text-sm font-medium transition">Join Room</button>
+        <button onclick="window.applyRoomChange()" class="w-full py-2.5 bg-indigo-600 hover:bg-indigo-500 text-white rounded-xl text-sm font-medium transition">Join Room</button>
       </div>
     </div>
   </div>
@@ -373,48 +366,35 @@
   <!-- YouTube IFrame API -->
   <script src="https://www.youtube.com/iframe_api"></script>
 
-  <!-- Firebase & App Logic Script -->
-  <script type="module">
-    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
-    import { getDatabase, ref, set, get, onValue, push, child, update, remove } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-database.js";
+  <!-- Global Application Engine -->
+  <script>
+    // Global Application State
+    window.currentRoom = "";
+    window.currentUser = "User_" + Math.floor(100 + Math.random() * 900);
+    window.masterMuted = false;
+    window.timerInterval = null;
+    window.timerSecondsRemaining = 0;
 
-    // --- YOUR FIREBASE CONFIGURATION ---
-    const firebaseConfig = {
-      apiKey: "AIzaSyAUsydn3vR0rxcjxpwnkhr_AGM6LjIW894",
-      authDomain: "longdistance-330d0.firebaseapp.com",
-      databaseURL: "https://longdistance-330d0-default-rtdb.firebaseio.com",
-      projectId: "longdistance-330d0",
-      storageBucket: "longdistance-330d0.firebasestorage.app",
-      messagingSenderId: "114298454958",
-      appId: "1:114298454958:web:fc9cdc4b772dbf897a3e3f",
-      measurementId: "G-0VSMWGF48K"
-    };
+    // Web Audio Synthesizer State
+    window.audioCtx = null;
+    window.ambientNodes = {};
 
-    // Initialize Firebase
-    const app = initializeApp(firebaseConfig);
-    const database = getDatabase(app);
+    // Video State
+    window.ytPlayer = null;
+    window.isYoutubeReady = false;
+    window.currentVideoType = 'youtube';
+    window.isSyncing = false;
 
-    // ==========================================
-    // GLOBAL STATE & VARIABLES
-    // ==========================================
-    let currentRoom = "main-room";
-    let currentUser = "User_" + Math.floor(100 + Math.random() * 900);
-    let masterMuted = false;
-    let timerInterval = null;
-    let timerSecondsRemaining = 0;
+    // Canvas State
+    window.isDrawing = false;
+    window.canvasTool = 'pen';
+    window.canvasCtx = null;
 
-    let audioCtx = null;
-    const ambientNodes = {};
+    // Firebase Database Reference Placeholder
+    window.firebaseDb = null;
+    window.roomDbRef = null;
 
-    let ytPlayer = null;
-    let isYoutubeReady = false;
-    let currentVideoType = 'youtube';
-    let isSyncing = false;
-
-    let isDrawing = false;
-    let canvasTool = 'pen';
-    let canvasCtx = null;
-
+    // Soundscapes
     const SOUNDSCAPES = [
       { id: 'rain', name: 'Rain & Thunder', icon: 'fa-cloud-showers-heavy', type: 'noise' },
       { id: 'fire', name: 'Cozy Fireplace', icon: 'fa-fire', type: 'crackle' },
@@ -423,51 +403,51 @@
       { id: 'forest', name: 'Forest Night', icon: 'fa-tree', type: 'forest' }
     ];
 
-    let photoGallery = [
+    const photoGallery = [
       "https://images.unsplash.com/photo-1518173946687-a4c8a383392e?auto=format&fit=crop&w=600&q=80",
       "https://images.unsplash.com/photo-1507525428034-b723cf961d3e?auto=format&fit=crop&w=600&q=80"
     ];
 
     // ==========================================
-    // INITIALIZATION & URL ROOM ROUTING
+    // INITIALIZATION & ROOM RESOLUTION
     // ==========================================
-    window.addEventListener('load', () => {
-      const hash = window.location.hash;
-      if (hash && hash.includes('room=')) {
-        currentRoom = hash.split('room=')[1].split('&')[0];
-      } else {
-        // Generate a random default room code if none exists so rooms work instantly
-        currentRoom = "room-" + Math.random().toString(36.substring(2, 8));
-        window.location.hash = `room=${currentRoom}`;
-      }
-      
-      const displayElem = document.getElementById('currentRoomDisplay');
-      if (displayElem) displayElem.innerText = currentRoom;
-
+    window.addEventListener('DOMContentLoaded', () => {
+      resolveRoomCode();
       initAmbientGrid();
       initSketchpad();
       renderPhotoGallery();
       initNativeVideoSync();
-      initFirebaseSync();
 
-      addSystemChatMessage(`Welcome to SyncSpace! Joined room: ${currentRoom}`);
+      addSystemChatMessage(`Welcome to SyncSpace! Joined room: ${window.currentRoom}`);
     });
 
+    function resolveRoomCode() {
+      const hash = window.location.hash;
+      if (hash && hash.includes('room=')) {
+        window.currentRoom = hash.split('room=')[1].split('&')[0].toUpperCase();
+      } else {
+        window.currentRoom = "ROOM-" + Math.floor(1000 + Math.random() * 9000);
+        window.history.replaceState(null, "", `#room=${window.currentRoom}`);
+      }
+      const roomDisplay = document.getElementById('currentRoomDisplay');
+      if (roomDisplay) roomDisplay.innerText = window.currentRoom;
+    }
+
     function getAudioContext() {
-      if (!audioCtx) {
+      if (!window.audioCtx) {
         const AudioContextClass = window.AudioContext || window.webkitAudioContext;
-        audioCtx = new AudioContextClass();
+        window.audioCtx = new AudioContextClass();
       }
-      if (audioCtx.state === 'suspended') {
-        audioCtx.resume();
+      if (window.audioCtx.state === 'suspended') {
+        window.audioCtx.resume();
       }
-      return audioCtx;
+      return window.audioCtx;
     }
 
     // ==========================================
-    // 1. PROCEDURAL WEB AUDIO SYNTHESIZER
+    // AMBIENT SOUND GENERATOR
     // ==========================================
-    window.initAmbientGrid = function() {
+    function initAmbientGrid() {
       const container = document.getElementById('ambientSoundGrid');
       if (!container) return;
       container.innerHTML = '';
@@ -484,13 +464,13 @@
               </div>
               <span class="text-xs font-semibold text-slate-200">${snd.name}</span>
             </div>
-            <button onclick="toggleAmbientSound('${snd.id}')" id="btn-${snd.id}" class="p-1.5 px-3 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs font-medium transition flex items-center gap-1.5">
+            <button onclick="window.toggleAmbientSound('${snd.id}')" id="btn-${snd.id}" class="p-1.5 px-3 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs font-medium transition flex items-center gap-1.5">
               <i class="fa-solid fa-play text-[10px]"></i> Play
             </button>
           </div>
           <div class="flex items-center gap-2">
             <i class="fa-solid fa-volume-low text-[10px] text-slate-500"></i>
-            <input type="range" min="0" max="1" step="0.01" value="0.5" id="vol-${snd.id}" oninput="setAmbientVolume('${snd.id}', this.value)" class="w-full accent-indigo-500 h-1 bg-slate-800 rounded-lg appearance-none cursor-pointer">
+            <input type="range" min="0" max="1" step="0.01" value="0.5" id="vol-${snd.id}" oninput="window.setAmbientVolume('${snd.id}', this.value)" class="w-full accent-indigo-500 h-1 bg-slate-800 rounded-lg appearance-none cursor-pointer">
           </div>
         `;
         container.appendChild(card);
@@ -498,633 +478,616 @@
     }
 
     window.toggleAmbientSound = function(id) {
-      if (ambientNodes[id] && ambientNodes[id].playing) {
+      if (window.ambientNodes[id] && window.ambientNodes[id].playing) {
         stopProceduralSound(id);
       } else {
         startProceduralSound(id);
       }
-    }
+    };
 
     function startProceduralSound(id) {
-      const ctx = getAudioContext();
-      const soundDef = SOUNDSCAPES.find(s => s.id === id);
-      if (!soundDef) return;
+      try {
+        const ctx = getAudioContext();
+        const soundDef = SOUNDSCAPES.find(s => s.id === id);
+        if (!soundDef) return;
 
-      const masterGain = ctx.createGain();
-      const volInput = document.getElementById(`vol-${id}`);
-      const initialVol = volInput ? parseFloat(volInput.value) || 0.5 : 0.5;
-      masterGain.gain.value = masterMuted ? 0 : initialVol;
-      masterGain.connect(ctx.destination);
+        const masterGain = ctx.createGain();
+        const volEl = document.getElementById(`vol-${id}`);
+        const initialVol = volEl ? parseFloat(volEl.value) : 0.5;
+        masterGain.gain.value = window.masterMuted ? 0 : initialVol;
+        masterGain.connect(ctx.destination);
 
-      let cleanupFunc = null;
+        let cleanupFunc = null;
 
-      if (soundDef.type === 'noise') {
-        const bufferSize = ctx.sampleRate * 2;
-        const buffer = ctx.createBuffer(1, bufferSize, ctx.sampleRate);
-        const data = buffer.getChannelData(0);
-        for (let i = 0; i < bufferSize; i++) {
-          data[i] = (Math.random() * 2 - 1) * 0.1;
+        if (soundDef.type === 'noise') {
+          const bufferSize = ctx.sampleRate * 2;
+          const buffer = ctx.createBuffer(1, bufferSize, ctx.sampleRate);
+          const data = buffer.getChannelData(0);
+          for (let i = 0; i < bufferSize; i++) {
+            data[i] = (Math.random() * 2 - 1) * 0.1;
+          }
+          const noise = ctx.createBufferSource();
+          noise.buffer = buffer;
+          noise.loop = true;
+
+          const filter = ctx.createBiquadFilter();
+          filter.type = 'lowpass';
+          filter.frequency.value = 800;
+
+          noise.connect(filter);
+          filter.connect(masterGain);
+          noise.start();
+
+          cleanupFunc = () => { try { noise.stop(); noise.disconnect(); } catch(e){} };
+        } else if (soundDef.type === 'waves') {
+          const osc = ctx.createOscillator();
+          const lfo = ctx.createOscillator();
+          const lfoGain = ctx.createGain();
+
+          osc.type = 'sine';
+          osc.frequency.value = 160;
+          lfo.frequency.value = 0.25;
+          lfoGain.gain.value = 0.4;
+
+          lfo.connect(masterGain.gain);
+          osc.connect(masterGain);
+
+          osc.start();
+          lfo.start();
+
+          cleanupFunc = () => { try { osc.stop(); lfo.stop(); } catch(e){} };
+        } else if (soundDef.type === 'space') {
+          const osc1 = ctx.createOscillator();
+          const osc2 = ctx.createOscillator();
+          osc1.type = 'sine';
+          osc2.type = 'triangle';
+          osc1.frequency.value = 65;
+          osc2.frequency.value = 65.4;
+
+          osc1.connect(masterGain);
+          osc2.connect(masterGain);
+          osc1.start();
+          osc2.start();
+
+          cleanupFunc = () => { try { osc1.stop(); osc2.stop(); } catch(e){} };
+        } else {
+          const osc = ctx.createOscillator();
+          osc.type = 'sine';
+          osc.frequency.value = id === 'fire' ? 110 : 280;
+
+          const filter = ctx.createBiquadFilter();
+          filter.type = 'bandpass';
+          filter.frequency.value = 350;
+
+          osc.connect(filter);
+          filter.connect(masterGain);
+          osc.start();
+
+          cleanupFunc = () => { try { osc.stop(); } catch(e){} };
         }
-        const noise = ctx.createBufferSource();
-        noise.buffer = buffer;
-        noise.loop = true;
 
-        const filter = ctx.createBiquadFilter();
-        filter.type = 'lowpass';
-        filter.frequency.value = 800;
+        window.ambientNodes[id] = {
+          playing: true,
+          gainNode: masterGain,
+          cleanup: cleanupFunc
+        };
 
-        noise.connect(filter);
-        filter.connect(masterGain);
-        noise.start();
-
-        cleanupFunc = () => { noise.stop(); noise.disconnect(); };
-      } else if (soundDef.type === 'waves') {
-        const osc = ctx.createOscillator();
-        const lfo = ctx.createOscillator();
-        const lfoGain = ctx.createGain();
-
-        osc.type = 'sine';
-        osc.frequency.value = 160;
-        lfo.frequency.value = 0.25;
-        lfoGain.gain.value = 0.4;
-
-        lfo.connect(masterGain.gain);
-        osc.connect(masterGain);
-
-        osc.start();
-        lfo.start();
-
-        cleanupFunc = () => { osc.stop(); lfo.stop(); };
-      } else if (soundDef.type === 'space') {
-        const osc1 = ctx.createOscillator();
-        const osc2 = ctx.createOscillator();
-        osc1.type = 'sine';
-        osc2.type = 'triangle';
-        osc1.frequency.value = 65;
-        osc2.frequency.value = 65.4;
-
-        osc1.connect(masterGain);
-        osc2.connect(masterGain);
-        osc1.start();
-        osc2.start();
-
-        cleanupFunc = () => { osc1.stop(); osc2.stop(); };
-      } else {
-        const osc = ctx.createOscillator();
-        osc.type = 'sine';
-        osc.frequency.value = id === 'fire' ? 110 : 280;
-
-        const filter = ctx.createBiquadFilter();
-        filter.type = 'bandpass';
-        filter.frequency.value = 350;
-
-        osc.connect(filter);
-        filter.connect(masterGain);
-        osc.start();
-
-        cleanupFunc = () => { osc.stop(); };
+        updateAmbientUI(id, true);
+      } catch (err) {
+        console.error("Audio generation error:", err);
       }
-
-      ambientNodes[id] = {
-        playing: true,
-        gainNode: masterGain,
-        cleanup: cleanupFunc
-      };
-
-      updateAmbientUI(id, true);
     }
 
     function stopProceduralSound(id) {
-      if (ambientNodes[id]) {
-        if (ambientNodes[id].cleanup) ambientNodes[id].cleanup();
-        ambientNodes[id].playing = false;
+      if (window.ambientNodes[id]) {
+        if (window.ambientNodes[id].cleanup) window.ambientNodes[id].cleanup();
+        window.ambientNodes[id].playing = false;
       }
       updateAmbientUI(id, false);
     }
 
     window.setAmbientVolume = function(id, val) {
-      if (ambientNodes[id] && ambientNodes[id].gainNode) {
-        ambientNodes[id].gainNode.gain.value = masterMuted ? 0 : parseFloat(val);
+      if (window.ambientNodes[id] && window.ambientNodes[id].gainNode) {
+        window.ambientNodes[id].gainNode.gain.value = window.masterMuted ? 0 : parseFloat(val);
       }
-    }
+    };
 
     window.toggleMasterMute = function() {
-      masterMuted = !masterMuted;
+      window.masterMuted = !window.masterMuted;
       const icon = document.getElementById('masterMuteIcon');
-      if (icon) icon.className = masterMuted ? "fa-solid fa-volume-xmark text-rose-400" : "fa-solid fa-volume-high";
+      if (icon) icon.className = window.masterMuted ? "fa-solid fa-volume-xmark text-rose-400" : "fa-solid fa-volume-high";
 
       SOUNDSCAPES.forEach(snd => {
-        if (ambientNodes[snd.id] && ambientNodes[snd.id].gainNode) {
-          const volElem = document.getElementById(`vol-${snd.id}`);
-          const targetVol = masterMuted ? 0 : (volElem ? parseFloat(volElem.value) : 0.5);
-          ambientNodes[snd.id].gainNode.gain.value = targetVol;
+        if (window.ambientNodes[snd.id] && window.ambientNodes[snd.id].gainNode) {
+          const volEl = document.getElementById(`vol-${snd.id}`);
+          const targetVol = window.masterMuted ? 0 : (volEl ? parseFloat(volEl.value) : 0.5);
+          window.ambientNodes[snd.id].gainNode.gain.value = targetVol;
         }
       });
-    }
+    };
 
     function updateAmbientUI(id, isPlaying) {
       const btn = document.getElementById(`btn-${id}`);
       const iconBg = document.getElementById(`icon-bg-${id}`);
-      if (!btn) return;
+      if (!btn || !iconBg) return;
+
       if (isPlaying) {
         btn.className = "p-1.5 px-3 rounded-lg bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-medium transition flex items-center gap-1.5 shadow-sm";
         btn.innerHTML = `<i class="fa-solid fa-pause text-[10px]"></i> Pause`;
-        if (iconBg) iconBg.className = "w-8 h-8 rounded-lg bg-indigo-600/20 text-indigo-400 flex items-center justify-center transition border border-indigo-500/30";
+        iconBg.className = "w-8 h-8 rounded-lg bg-indigo-600/20 text-indigo-400 flex items-center justify-center transition border border-indigo-500/30";
       } else {
         btn.className = "p-1.5 px-3 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs font-medium transition flex items-center gap-1.5";
         btn.innerHTML = `<i class="fa-solid fa-play text-[10px]"></i> Play`;
-        if (iconBg) iconBg.className = "w-8 h-8 rounded-lg bg-slate-800 text-slate-400 flex items-center justify-center transition";
+        iconBg.className = "w-8 h-8 rounded-lg bg-slate-800 text-slate-400 flex items-center justify-center transition";
       }
     }
 
     window.setSoundTimer = function(minutes) {
-      clearInterval(timerInterval);
+      clearInterval(window.timerInterval);
       if (minutes <= 0) {
-        timerSecondsRemaining = 0;
-        const tDisp = document.getElementById('timerDisplay');
-        if (tDisp) tDisp.innerText = "Off";
+        window.timerSecondsRemaining = 0;
+        document.getElementById('timerDisplay').innerText = "Off";
         return;
       }
-      timerSecondsRemaining = minutes * 60;
+      window.timerSecondsRemaining = minutes * 60;
       updateTimerDisplay();
 
-      timerInterval = setInterval(() => {
-        timerSecondsRemaining--;
+      window.timerInterval = setInterval(() => {
+        window.timerSecondsRemaining--;
         updateTimerDisplay();
-        if (timerSecondsRemaining <= 0) {
-          clearInterval(timerInterval);
+        if (window.timerSecondsRemaining <= 0) {
+          clearInterval(window.timerInterval);
           SOUNDSCAPES.forEach(snd => stopProceduralSound(snd.id));
-          const tDisp = document.getElementById('timerDisplay');
-          if (tDisp) tDisp.innerText = "Off";
+          document.getElementById('timerDisplay').innerText = "Off";
         }
       }, 1000);
-    }
+    };
 
     function updateTimerDisplay() {
-      const m = Math.floor(timerSecondsRemaining / 60);
-      const s = timerSecondsRemaining % 60;
-      const tDisp = document.getElementById('timerDisplay');
-      if (tDisp) tDisp.innerText = `${m}:${s < 10 ? '0' : ''}${s}`;
+      const m = Math.floor(window.timerSecondsRemaining / 60);
+      const s = window.timerSecondsRemaining % 60;
+      const display = document.getElementById('timerDisplay');
+      if (display) display.innerText = `${m}:${s < 10 ? '0' : ''}${s}`;
     }
 
     // ==========================================
-    // 2. WATCH TOGETHER VIDEO ENGINE
+    // WATCH TOGETHER VIDEO ENGINE
     // ==========================================
-    window.onYouTubeIframeAPIReady = function() {
+    function onYouTubeIframeAPIReady() {
       try {
-        ytPlayer = new YT.Player('youtubePlayer', {
-          height: '100%',
-          width: '100%',
+        window.ytPlayer = new YT.Player('youtubePlayer', {
           videoId: 'jfKfPfyJRdk',
-          playerVars: { 'autoplay': 0, 'controls': 1, 'modestbranding': 1 },
+          playerVars: { 'playsinline': 1, 'controls': 1, 'modestbranding': 1 },
           events: {
-            'onReady': () => { isYoutubeReady = true; },
-            'onStateChange': onYouTubeStateChange
+            'onReady': () => { window.isYoutubeReady = true; },
+            'onStateChange': onPlayerStateChange
           }
         });
       } catch (e) {
-        console.error("YouTube API init error:", e);
+        console.warn("YouTube iframe init warning:", e);
       }
     }
 
-    function onYouTubeStateChange(event) {
-      if (isSyncing || !ytPlayer || typeof ytPlayer.getCurrentTime !== 'function') return;
-      if (event.data === YT.PlayerState.PLAYING || event.data === YT.PlayerState.PAUSED) {
-        const time = ytPlayer.getCurrentTime();
-        pushVideoState({
-          type: 'youtube',
-          videoId: getCurrentYouTubeId(),
-          isPlaying: event.data === YT.PlayerState.PLAYING,
-          currentTime: time,
-          timestamp: Date.now()
-        });
+    function onPlayerStateChange(event) {
+      if (window.isSyncing) return;
+      if (event.data === YT.PlayerState.PLAYING) {
+        broadcastState('video', { action: 'play', time: window.ytPlayer.getCurrentTime() });
+      } else if (event.data === YT.PlayerState.PAUSED) {
+        broadcastState('video', { action: 'pause', time: window.ytPlayer.getCurrentTime() });
       }
     }
 
-    function getCurrentYouTubeId() {
-      if (!ytPlayer || typeof ytPlayer.getVideoUrl !== 'function') return 'jfKfPfyJRdk';
-      const url = ytPlayer.getVideoUrl();
-      const match = url ? url.match(/[?&]v=([^&]+)/) : null;
-      return match ? match[1] : 'jfKfPfyJRdk';
+    function parseYoutubeId(url) {
+      if (!url) return null;
+      const regExp = /^.*(youtu.be\/|v\/|u\/\w\/|embed\/|watch\?v=|\&v=)([^#\&\?]*).*/;
+      const match = url.match(regExp);
+      return (match && match[2].length === 11) ? match[2] : null;
     }
 
     window.loadUniversalVideo = function() {
-      const inputElem = document.getElementById('videoUrlInput');
-      if (!inputElem) return;
-      const input = inputElem.value.trim();
+      const input = document.getElementById('videoUrlInput');
       if (!input) return;
+      const val = input.value.trim();
+      if (!val) return;
 
-      if (input.includes('youtube.com') || input.includes('youtu.be')) {
-        let videoId = '';
-        if (input.includes('youtu.be/')) {
-          videoId = input.split('youtu.be/')[1].split('?')[0];
-        } else if (input.includes('watch?v=')) {
-          videoId = input.split('watch?v=')[1].split('&')[0];
-        }
-        if (videoId) {
-          switchVideoPlayer('youtube');
-          if (isYoutubeReady && ytPlayer) {
-            ytPlayer.loadVideoById(videoId);
-          }
-          pushVideoState({ type: 'youtube', videoId: videoId, isPlaying: true, currentTime: 0, timestamp: Date.now() });
-        }
+      const ytId = parseYoutubeId(val);
+      if (ytId) {
+        window.loadPreset('youtube', ytId);
       } else {
-        switchVideoPlayer('html5');
-        const vPlayer = document.getElementById('nativeVideoPlayer');
-        const vSource = document.getElementById('nativeVideoSource');
-        if (vPlayer && vSource) {
-          vSource.src = input;
-          vPlayer.load();
-          vPlayer.play();
-        }
-        pushVideoState({ type: 'html5', url: input, isPlaying: true, currentTime: 0, timestamp: Date.now() });
+        window.loadPreset('mp4', val);
       }
-    }
+    };
 
-    window.loadPreset = function(type, val) {
-      if (type === 'youtube') {
-        switchVideoPlayer('youtube');
-        if (isYoutubeReady && ytPlayer) {
-          ytPlayer.loadVideoById(val);
-        }
-        pushVideoState({ type: 'youtube', videoId: val, isPlaying: true, currentTime: 0, timestamp: Date.now() });
-      } else if (type === 'mp4') {
-        switchVideoPlayer('html5');
-        const vPlayer = document.getElementById('nativeVideoPlayer');
-        const vSource = document.getElementById('nativeVideoSource');
-        if (vPlayer && vSource) {
-          vSource.src = val;
-          vPlayer.load();
-          vPlayer.play();
-        }
-        pushVideoState({ type: 'html5', url: val, isPlaying: true, currentTime: 0, timestamp: Date.now() });
-      }
-    }
-
-    function switchVideoPlayer(mode) {
-      currentVideoType = mode;
+    window.loadPreset = function(type, target) {
       const ytContainer = document.getElementById('youtubePlayerContainer');
       const html5Container = document.getElementById('html5PlayerContainer');
-      if (mode === 'youtube') {
-        if (ytContainer) ytContainer.classList.remove('hidden');
+
+      if (type === 'youtube') {
+        window.currentVideoType = 'youtube';
         if (html5Container) html5Container.classList.add('hidden');
-      } else {
+        if (ytContainer) ytContainer.classList.remove('hidden');
+
+        if (window.isYoutubeReady && window.ytPlayer && window.ytPlayer.loadVideoById) {
+          window.isSyncing = true;
+          window.ytPlayer.loadVideoById(target);
+          setTimeout(() => { window.isSyncing = false; }, 800);
+        }
+      } else if (type === 'mp4') {
+        window.currentVideoType = 'html5';
         if (ytContainer) ytContainer.classList.add('hidden');
         if (html5Container) html5Container.classList.remove('hidden');
+
+        const videoEl = document.getElementById('nativeVideoPlayer');
+        const sourceEl = document.getElementById('nativeVideoSource');
+        if (videoEl && sourceEl) {
+          sourceEl.src = target;
+          videoEl.load();
+          videoEl.play().catch(() => {});
+        }
       }
-    }
+
+      broadcastState('video', { type, target, action: 'change' });
+      addSystemChatMessage(`Changed synchronized video stream.`);
+    };
 
     function initNativeVideoSync() {
-      const vPlayer = document.getElementById('nativeVideoPlayer');
-      if (!vPlayer) return;
-      vPlayer.addEventListener('play', () => {
-        if (isSyncing) return;
-        const vSource = document.getElementById('nativeVideoSource');
-        pushVideoState({ type: 'html5', url: vSource ? vSource.src : '', isPlaying: true, currentTime: vPlayer.currentTime, timestamp: Date.now() });
+      const videoEl = document.getElementById('nativeVideoPlayer');
+      if (!videoEl) return;
+
+      videoEl.addEventListener('play', () => {
+        if (!window.isSyncing && window.currentVideoType === 'html5') {
+          broadcastState('video', { action: 'play', time: videoEl.currentTime });
+        }
       });
-      vPlayer.addEventListener('pause', () => {
-        if (isSyncing) return;
-        const vSource = document.getElementById('nativeVideoSource');
-        pushVideoState({ type: 'html5', url: vSource ? vSource.src : '', isPlaying: false, currentTime: vPlayer.currentTime, timestamp: Date.now() });
+      videoEl.addEventListener('pause', () => {
+        if (!window.isSyncing && window.currentVideoType === 'html5') {
+          broadcastState('video', { action: 'pause', time: videoEl.currentTime });
+        }
       });
     }
 
     // ==========================================
-    // 3. COLLABORATIVE SKETCHPAD
+    // SKETCHPAD ENGINE
     // ==========================================
     function initSketchpad() {
       const canvas = document.getElementById('sketchCanvas');
       if (!canvas) return;
-      canvasCtx = canvas.getContext('2d');
+      window.canvasCtx = canvas.getContext('2d');
 
       function resizeCanvas() {
-        if (!canvas || !canvas.parentElement) return;
-        const rect = canvas.parentElement.getBoundingClientRect();
-        canvas.width = rect.width || 600;
-        canvas.height = rect.height || 400;
+        const parent = canvas.parentElement;
+        if (!parent) return;
+        canvas.width = parent.clientWidth;
+        canvas.height = parent.clientHeight;
+        window.canvasCtx.lineCap = 'round';
+        window.canvasCtx.lineJoin = 'round';
       }
-      resizeCanvas();
+
       window.addEventListener('resize', resizeCanvas);
+      setTimeout(resizeCanvas, 100);
 
       canvas.addEventListener('mousedown', startDrawing);
-      canvas.addEventListener('mousemove', drawOnCanvas);
+      canvas.addEventListener('mousemove', draw);
       canvas.addEventListener('mouseup', stopDrawing);
       canvas.addEventListener('mouseleave', stopDrawing);
 
-      canvas.addEventListener('touchstart', (e) => { e.preventDefault(); if(e.touches[0]) startDrawing(e.touches[0]); }, { passive: false });
-      canvas.addEventListener('touchmove', (e) => { e.preventDefault(); if(e.touches[0]) drawOnCanvas(e.touches[0]); }, { passive: false });
+      canvas.addEventListener('touchstart', (e) => {
+        const touch = e.touches[0];
+        startDrawing({ clientX: touch.clientX, clientY: touch.clientY });
+      }, { passive: true });
+
+      canvas.addEventListener('touchmove', (e) => {
+        const touch = e.touches[0];
+        draw({ clientX: touch.clientX, clientY: touch.clientY });
+      }, { passive: true });
+
       canvas.addEventListener('touchend', stopDrawing);
     }
 
     function startDrawing(e) {
-      isDrawing = true;
+      window.isDrawing = true;
       const canvas = document.getElementById('sketchCanvas');
-      if (!canvas) return;
       const rect = canvas.getBoundingClientRect();
-      const x = (e.clientX - rect.left) / canvas.width;
-      const y = (e.clientY - rect.top) / canvas.height;
-      window.lastX = x;
-      window.lastY = y;
+      const x = e.clientX - rect.left;
+      const y = e.clientY - rect.top;
+
+      window.canvasCtx.beginPath();
+      window.canvasCtx.moveTo(x, y);
     }
 
-    function drawOnCanvas(e) {
-      if (!isDrawing) return;
+    function draw(e) {
+      if (!window.isDrawing) return;
       const canvas = document.getElementById('sketchCanvas');
-      if (!canvas) return;
       const rect = canvas.getBoundingClientRect();
-      const x = (e.clientX - rect.left) / canvas.width;
-      const y = (e.clientY - rect.top) / canvas.height;
+      const x = e.clientX - rect.left;
+      const y = e.clientY - rect.top;
 
-      const colorPicker = document.getElementById('canvasColorPicker');
-      const sizeInput = document.getElementById('canvasLineWidth');
+      const color = document.getElementById('canvasColorPicker').value;
+      const width = document.getElementById('canvasLineWidth').value;
 
-      const color = canvasTool === 'eraser' ? '#0f172a' : (colorPicker ? colorPicker.value : '#6366f1');
-      const size = sizeInput ? parseInt(sizeInput.value) || 4 : 4;
-
-      drawLineLocally(window.lastX, window.lastY, x, y, color, size);
-      pushCanvasStroke({ x0: window.lastX, y0: window.lastY, x1: x, y1: y, color, size });
-
-      window.lastX = x;
-      window.lastY = y;
+      window.canvasCtx.strokeStyle = window.canvasTool === 'eraser' ? '#0f172a' : color;
+      window.canvasCtx.lineWidth = width;
+      window.canvasCtx.lineTo(x, y);
+      window.canvasCtx.stroke();
     }
 
     function stopDrawing() {
-      isDrawing = false;
-    }
-
-    function drawLineLocally(x0, y0, x1, y1, color, size) {
-      if (!canvasCtx) return;
-      const canvas = document.getElementById('sketchCanvas');
-      if (!canvas) return;
-      canvasCtx.beginPath();
-      canvasCtx.moveTo(x0 * canvas.width, y0 * canvas.height);
-      canvasCtx.lineTo(x1 * canvas.width, y1 * canvas.height);
-      canvasCtx.strokeStyle = color;
-      canvasCtx.lineWidth = size;
-      canvasCtx.lineCap = 'round';
-      canvasCtx.stroke();
-    }
-
-    window.clearCanvas = function() {
-      if (!canvasCtx) return;
-      const canvas = document.getElementById('sketchCanvas');
-      if (!canvas) return;
-      canvasCtx.clearRect(0, 0, canvas.width, canvas.height);
-      pushCanvasAction({ action: 'clear' });
+      window.isDrawing = false;
     }
 
     window.setCanvasTool = function(tool) {
-      canvasTool = tool;
-      const tPen = document.getElementById('tool-pen');
-      const tEraser = document.getElementById('tool-eraser');
-      if (tPen) tPen.className = tool === 'pen' ? "p-2 bg-indigo-600 text-white rounded-lg text-xs transition" : "p-2 bg-slate-800 text-slate-300 hover:bg-slate-700 rounded-lg text-xs transition";
-      if (tEraser) tEraser.className = tool === 'eraser' ? "p-2 bg-indigo-600 text-white rounded-lg text-xs transition" : "p-2 bg-slate-800 text-slate-300 hover:bg-slate-700 rounded-lg text-xs transition";
-    }
+      window.canvasTool = tool;
+      const penBtn = document.getElementById('tool-pen');
+      const eraserBtn = document.getElementById('tool-eraser');
+
+      if (penBtn) penBtn.className = tool === 'pen' ? "p-2 bg-indigo-600 text-white rounded-lg text-xs transition" : "p-2 bg-slate-800 text-slate-300 hover:bg-slate-700 rounded-lg text-xs transition";
+      if (eraserBtn) eraserBtn.className = tool === 'eraser' ? "p-2 bg-indigo-600 text-white rounded-lg text-xs transition" : "p-2 bg-slate-800 text-slate-300 hover:bg-slate-700 rounded-lg text-xs transition";
+    };
+
+    window.clearCanvas = function() {
+      const canvas = document.getElementById('sketchCanvas');
+      if (canvas && window.canvasCtx) {
+        window.canvasCtx.clearRect(0, 0, canvas.width, canvas.height);
+      }
+    };
 
     // ==========================================
-    // 4. PHOTO GALLERY & SLEEP BEDTIME
+    // PHOTO GALLERY & SLEEP SPACE
     // ==========================================
-    window.renderPhotoGallery = function() {
+    function renderPhotoGallery() {
       const grid = document.getElementById('photoGrid');
       if (!grid) return;
       grid.innerHTML = '';
-      photoGallery.forEach(url => {
+      photoGallery.forEach((url) => {
         const card = document.createElement('div');
-        card.className = "glass-card rounded-2xl overflow-hidden border border-slate-800 aspect-video relative group";
-        card.innerHTML = `<img src="${url}" class="w-full h-full object-cover">`;
+        card.className = "glass-card p-2 rounded-2xl border border-slate-800 overflow-hidden shadow-lg group";
+        card.innerHTML = `
+          <div class="h-48 rounded-xl overflow-hidden relative">
+            <img src="${url}" class="w-full h-full object-cover group-hover:scale-105 transition duration-300" onerror="this.src='https://placehold.co/600x400/1e293b/818cf8?text=Photo+Memory'">
+          </div>
+        `;
         grid.appendChild(card);
       });
     }
 
     window.addPhotoToGallery = function() {
       const input = document.getElementById('photoUrlInput');
-      if (!input || !input.value.trim()) return;
-      photoGallery.push(input.value.trim());
-      input.value = '';
-      renderPhotoGallery();
-      pushPhotoUpdate(photoGallery);
-    }
+      if (!input) return;
+      const url = input.value.trim();
+      if (url) {
+        photoGallery.unshift(url);
+        renderPhotoGallery();
+        input.value = '';
+        addSystemChatMessage(`${window.currentUser} added a photo memory.`);
+      }
+    };
 
     window.sendBedtimeNote = function() {
-      const noteInput = document.getElementById('bedtimeNoteInput');
-      if (!noteInput) return;
-      const note = noteInput.value.trim();
-      if (!note) return;
-      sendChatMessageData(`🌙 Bedtime Note: ${note}`);
-      noteInput.value = '';
-      switchTab('watch');
-    }
-
-    window.activateSleepMode = function(type, mins) {
-      setSoundTimer(mins);
-      if (type === 'rain') {
-        startProceduralSound('rain');
-      } else {
-        startProceduralSound('space');
+      const input = document.getElementById('bedtimeNoteInput');
+      if (!input) return;
+      const note = input.value.trim();
+      if (note) {
+        addChatMessage(window.currentUser, `🌙 Bedtime Note: "${note}"`);
+        broadcastState('chat', { user: window.currentUser, text: `🌙 Bedtime Note: "${note}"` });
+        input.value = '';
       }
-      switchTab('watch');
-      sendChatMessageData(`💤 Started ${mins}m Sleep Session (${type})`);
-    }
+    };
+
+    window.activateSleepMode = function(soundId, minutes) {
+      window.setSoundTimer(minutes);
+      startProceduralSound(soundId);
+      window.switchTab('watch');
+      addSystemChatMessage(`Activated bedtime sleep mode (${minutes} min timer)`);
+    };
 
     // ==========================================
-    // 5. CHAT & NAVIGATION TABS
+    // NAVIGATION, CHAT & UI ACTIONS
     // ==========================================
     window.switchTab = function(tabId) {
-      ['watch', 'sketch', 'bedtime', 'photowall'].forEach(t => {
-        const panel = document.getElementById(`view-${t}`);
-        if (panel) panel.classList.add('hidden');
-        const deskBtn = document.getElementById(`tab-${t}`);
-        if (deskBtn) {
-          deskBtn.className = "nav-tab px-4 py-1.5 rounded-lg text-sm font-medium transition-all flex items-center gap-2 text-slate-400 hover:text-slate-200";
-        }
-        const mobBtn = document.getElementById(`mob-tab-${t}`);
-        if (mobBtn) {
-          mobBtn.className = "px-3 py-1.5 rounded-lg font-medium text-slate-400";
-        }
-      });
-
+      document.querySelectorAll('.view-panel').forEach(el => el.classList.add('hidden'));
       const activePanel = document.getElementById(`view-${tabId}`);
       if (activePanel) activePanel.classList.remove('hidden');
-      const activeDeskBtn = document.getElementById(`tab-${tabId}`);
-      if (activeDeskBtn) {
-        activeDeskBtn.className = "nav-tab active px-4 py-1.5 rounded-lg text-sm font-medium transition-all flex items-center gap-2 bg-indigo-600 text-white shadow-sm";
+
+      document.querySelectorAll('.nav-tab').forEach(el => {
+        el.className = "nav-tab px-4 py-1.5 rounded-lg text-sm font-medium transition-all flex items-center gap-2 text-slate-400 hover:text-slate-200";
+      });
+      const activeBtn = document.getElementById(`tab-${tabId}`);
+      if (activeBtn) {
+        activeBtn.className = "nav-tab active px-4 py-1.5 rounded-lg text-sm font-medium transition-all flex items-center gap-2 bg-indigo-600 text-white shadow-sm";
       }
-      const activeMobBtn = document.getElementById(`mob-tab-${tabId}`);
-      if (activeMobBtn) {
-        activeMobBtn.className = "px-3 py-1.5 rounded-lg font-medium bg-indigo-600 text-white";
-      }
-    }
+    };
 
     window.sendChatMessage = function(e) {
       if (e) e.preventDefault();
       const input = document.getElementById('chatInput');
-      if (!input || !input.value.trim()) return;
-      sendChatMessageData(input.value.trim());
-      input.value = '';
-    }
+      if (!input) return;
+      const msg = input.value.trim();
+      if (!msg) return;
 
-    function sendChatMessageData(text) {
-      const chatRef = ref(database, `rooms/${currentRoom}/chat`);
-      push(chatRef, { user: currentUser, text: text, time: Date.now() });
+      addChatMessage(window.currentUser, msg);
+      broadcastState('chat', { user: window.currentUser, text: msg });
+      input.value = '';
+    };
+
+    function addChatMessage(user, text) {
+      const stream = document.getElementById('chatStream');
+      if (!stream) return;
+      const msgEl = document.createElement('div');
+      msgEl.className = "bg-slate-900/80 p-2.5 rounded-xl border border-slate-800 text-xs space-y-1";
+      msgEl.innerHTML = `
+        <div class="flex items-center justify-between">
+          <span class="font-semibold text-indigo-300">${user}</span>
+          <span class="text-[10px] text-slate-500">${new Date().toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}</span>
+        </div>
+        <p class="text-slate-300">${text}</p>
+      `;
+      stream.appendChild(msgEl);
+      stream.scrollTop = stream.scrollHeight;
     }
 
     function addSystemChatMessage(text) {
       const stream = document.getElementById('chatStream');
       if (!stream) return;
-      const div = document.createElement('div');
-      div.className = "text-xs text-slate-400 bg-slate-900/60 p-2.5 rounded-xl border border-slate-800/80";
-      div.innerHTML = `<i class="fa-solid fa-circle-info text-indigo-400 mr-1"></i> ${text}`;
-      stream.appendChild(div);
+      const msgEl = document.createElement('div');
+      msgEl.className = "text-center my-2 text-[11px] text-slate-500 italic";
+      msgEl.innerText = text;
+      stream.appendChild(msgEl);
       stream.scrollTop = stream.scrollHeight;
     }
 
-    window.copyShareLink = function() {
-      const url = `${window.location.origin}${window.location.pathname}#room=${currentRoom}`;
-      navigator.clipboard.writeText(url);
-      alert(`Room link copied to clipboard! Share it with your partner:\n${url}`);
-    }
-
-    window.openRoomModal = function() {
-      const modal = document.getElementById('roomModal');
-      if (modal) modal.classList.remove('hidden');
-      const rInput = document.getElementById('modalRoomInput');
-      const nInput = document.getElementById('modalNameInput');
-      if (rInput) rInput.value = currentRoom;
-      if (nInput) nInput.value = currentUser;
-    }
-
-    window.closeRoomModal = function() {
-      const modal = document.getElementById('roomModal');
-      if (modal) modal.classList.add('hidden');
-    }
-
-    window.applyRoomChange = function() {
-      const rInput = document.getElementById('modalRoomInput');
-      const nInput = document.getElementById('modalNameInput');
-      if (rInput && rInput.value.trim()) currentRoom = rInput.value.trim().toLowerCase().replace(/\s+/g, '-');
-      if (nInput && nInput.value.trim()) currentUser = nInput.value.trim();
-      window.location.hash = `room=${currentRoom}`;
-      const disp = document.getElementById('currentRoomDisplay');
-      if (disp) disp.innerText = currentRoom;
-      closeRoomModal();
-      window.location.reload();
-    }
-
     window.sendHeartbeat = function() {
-      sendChatMessageData("❤️ Sent a heartbeat pulse!");
-    }
+      addSystemChatMessage(`❤️ ${window.currentUser} sent a heartbeat pulse!`);
+      broadcastState('heartbeat', { user: window.currentUser });
+    };
 
     window.toggleVoiceCall = function() {
-      const btn = document.getElementById('voiceToggleBtn');
       const icon = document.getElementById('voiceIcon');
       const text = document.getElementById('voiceStatusText');
-      if (!btn) return;
-      if (btn.classList.contains('bg-emerald-600')) {
-        btn.className = "px-3 py-1.5 rounded-xl text-xs md:text-sm font-medium bg-slate-800 hover:bg-slate-700 text-slate-300 border border-slate-700 transition flex items-center gap-2";
-        if (icon) icon.className = "fa-solid fa-microphone-slash text-rose-400";
-        if (text) text.innerText = "Voice Call";
-        addSystemChatMessage("Left voice channel.");
-      } else {
-        btn.className = "px-3 py-1.5 rounded-xl text-xs md:text-sm font-medium bg-emerald-600 hover:bg-emerald-500 text-white shadow-md transition flex items-center gap-2";
-        if (icon) icon.className = "fa-solid fa-microphone text-white animate-pulse";
+      const btn = document.getElementById('voiceToggleBtn');
+
+      if (icon && icon.classList.contains('fa-microphone-slash')) {
+        icon.className = "fa-solid fa-microphone text-emerald-400";
         if (text) text.innerText = "Connected";
-        addSystemChatMessage("Connected to secure voice channel.");
+        if (btn) btn.className = "px-3 py-1.5 rounded-xl text-xs md:text-sm font-medium bg-emerald-500/10 text-emerald-300 border border-emerald-500/30 transition flex items-center gap-2";
+        addSystemChatMessage(`${window.currentUser} joined voice call.`);
+      } else if (icon) {
+        icon.className = "fa-solid fa-microphone-slash text-rose-400";
+        if (text) text.innerText = "Voice Call";
+        if (btn) btn.className = "px-3 py-1.5 rounded-xl text-xs md:text-sm font-medium bg-slate-800 hover:bg-slate-700 text-slate-300 border border-slate-700 transition flex items-center gap-2";
       }
-    }
+    };
+
+    window.copyShareLink = function() {
+      const shareUrl = `${window.location.origin}${window.location.pathname}#room=${window.currentRoom}`;
+      if (navigator.clipboard && navigator.clipboard.writeText) {
+        navigator.clipboard.writeText(shareUrl).then(() => {
+          addSystemChatMessage(`Share URL copied to clipboard!`);
+        }).catch(() => {
+          document.execCommand('copy');
+          addSystemChatMessage(`Share URL copied!`);
+        });
+      } else {
+        document.execCommand('copy');
+        addSystemChatMessage(`Share URL copied!`);
+      }
+    };
 
     window.updateMoodStatus = function() {
       const input = document.getElementById('userMoodInput');
       if (!input) return;
       const mood = input.value.trim();
-      if (!mood) return;
-      sendChatMessageData(`✨ Status update: ${mood}`);
-      input.value = '';
-    }
+      if (mood) {
+        addSystemChatMessage(`${window.currentUser} set vibe: "${mood}"`);
+        broadcastState('mood', { user: window.currentUser, mood });
+        input.value = '';
+      }
+    };
 
-    // ==========================================
-    // 6. FIREBASE REALTIME DATABASE SYNC
-    // ==========================================
-    function initFirebaseSync() {
-      // Chat Listener
-      onValue(ref(database, `rooms/${currentRoom}/chat`), (snapshot) => {
-        const data = snapshot.val();
-        const stream = document.getElementById('chatStream');
-        if (!stream) return;
-        stream.innerHTML = '';
-        if (data) {
-          Object.values(data).forEach(msg => {
-            const div = document.createElement('div');
-            div.className = "bg-slate-900/80 p-2.5 rounded-xl border border-slate-800 text-xs space-y-1";
-            div.innerHTML = `<div class="font-semibold text-indigo-300">${msg.user}</div><div class="text-slate-200">${msg.text}</div>`;
-            stream.appendChild(div);
+    window.openRoomModal = function() {
+      const modal = document.getElementById('roomModal');
+      if (modal) modal.classList.remove('hidden');
+    };
+
+    window.closeRoomModal = function() {
+      const modal = document.getElementById('roomModal');
+      if (modal) modal.classList.add('hidden');
+    };
+
+    window.applyRoomChange = function() {
+      const roomInput = document.getElementById('modalRoomInput');
+      const nameInput = document.getElementById('modalNameInput');
+
+      if (roomInput && roomInput.value.trim()) {
+        window.currentRoom = roomInput.value.trim().toUpperCase();
+        window.history.replaceState(null, "", `#room=${window.currentRoom}`);
+        const display = document.getElementById('currentRoomDisplay');
+        if (display) display.innerText = window.currentRoom;
+      }
+      if (nameInput && nameInput.value.trim()) {
+        window.currentUser = nameInput.value.trim();
+      }
+
+      window.closeRoomModal();
+      addSystemChatMessage(`Switched to room: ${window.currentRoom}`);
+      connectFirebaseRoom();
+    };
+
+    function broadcastState(type, payload) {
+      if (window.roomDbRef && window.firebasePush) {
+        try {
+          window.firebasePush(window.roomDbRef.child('events'), {
+            type,
+            payload,
+            timestamp: Date.now()
           });
-          stream.scrollTop = stream.scrollHeight;
+        } catch (e) {
+          console.warn("Firebase broadcast skipped:", e);
         }
-      });
+      }
+    }
+  </script>
 
-      // Video Sync Listener
-      onValue(ref(database, `rooms/${currentRoom}/videoState`), (snapshot) => {
-        const state = snapshot.val();
-        if (!state) return;
-        isSyncing = true;
-        if (state.type === 'youtube' && isYoutubeReady && ytPlayer) {
-          const currentId = getCurrentYouTubeId();
-          if (currentId !== state.videoId) {
-            ytPlayer.loadVideoById(state.videoId);
-          }
-          if (state.isPlaying) {
-            ytPlayer.playVideo();
-          } else {
-            ytPlayer.pauseVideo();
-          }
-          if (Math.abs(ytPlayer.getCurrentTime() - state.currentTime) > 2) {
-            ytPlayer.seekTo(state.currentTime, true);
-          }
-        }
-        setTimeout(() => { isSyncing = false; }, 1000);
-      });
+  <!-- Non-Blocking Isolated Firebase Realtime Database Integration -->
+  <script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
+    import { getDatabase, ref, push, onChildAdded } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-database.js";
 
-      // Canvas Strokes Listener
-      onValue(ref(database, `rooms/${currentRoom}/canvasStrokes`), (snapshot) => {
-        const strokes = snapshot.val();
-        if (strokes) {
-          Object.values(strokes).forEach(stroke => {
-            if (stroke.action === 'clear') {
-              if (canvasCtx) {
-                const canvas = document.getElementById('sketchCanvas');
-                if (canvas) canvasCtx.clearRect(0, 0, canvas.width, canvas.height);
+    const firebaseConfig = {
+      apiKey: "AIzaSyAUsydn3vR0rxcjxpwnkhr_AGM6LjIW894",
+      authDomain: "longdistance-330d0.firebaseapp.com",
+      databaseURL: "https://longdistance-330d0-default-rtdb.firebaseio.com",
+      projectId: "longdistance-330d0",
+      storageBucket: "longdistance-330d0.firebasestorage.app",
+      messagingSenderId: "114298454958",
+      appId: "1:114298454958:web:fc9cdc4b772dbf897a3e3f",
+      measurementId: "G-0VSMWGF48K"
+    };
+
+    try {
+      const app = initializeApp(firebaseConfig);
+      window.firebaseDb = getDatabase(app);
+      window.firebasePush = push;
+      window.firebaseRef = ref;
+      window.firebaseOnChildAdded = onChildAdded;
+
+      window.connectFirebaseRoom = function() {
+        if (!window.firebaseDb || !window.currentRoom) return;
+        try {
+          const roomRef = ref(window.firebaseDb, 'rooms/' + window.currentRoom);
+          window.roomDbRef = roomRef;
+
+          const eventsRef = ref(window.firebaseDb, 'rooms/' + window.currentRoom + '/events');
+          onChildAdded(eventsRef, (snapshot) => {
+            const data = snapshot.val();
+            if (!data) return;
+
+            // Prevent self echoes for messages
+            if (data.type === 'chat' && data.payload && data.payload.user !== window.currentUser) {
+              const stream = document.getElementById('chatStream');
+              if (stream) {
+                const msgEl = document.createElement('div');
+                msgEl.className = "bg-slate-900/80 p-2.5 rounded-xl border border-slate-800 text-xs space-y-1";
+                msgEl.innerHTML = `
+                  <div class="flex items-center justify-between">
+                    <span class="font-semibold text-indigo-300">${data.payload.user}</span>
+                    <span class="text-[10px] text-slate-500">${new Date(data.timestamp || Date.now()).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}</span>
+                  </div>
+                  <p class="text-slate-300">${data.payload.text}</p>
+                `;
+                stream.appendChild(msgEl);
+                stream.scrollTop = stream.scrollHeight;
               }
-            } else if (stroke.x0 !== undefined) {
-              drawLineLocally(stroke.x0, stroke.y0, stroke.x1, stroke.y1, stroke.color, stroke.size);
             }
           });
+        } catch(e) {
+          console.warn("Firebase room attachment error:", e);
         }
-      });
+      };
 
-      // Photo Gallery Listener
-      onValue(ref(database, `rooms/${currentRoom}/photos`), (snapshot) => {
-        const photos = snapshot.val();
-        if (photos && Array.isArray(photos)) {
-          photoGallery = photos;
-          renderPhotoGallery();
-        }
-      });
-    }
-
-    function pushVideoState(state) {
-      set(ref(database, `rooms/${currentRoom}/videoState`), state);
-    }
-
-    function pushCanvasStroke(stroke) {
-      push(ref(database, `rooms/${currentRoom}/canvasStrokes`), stroke);
-    }
-
-    function pushCanvasAction(action) {
-      push(ref(database, `rooms/${currentRoom}/canvasStrokes`), action);
-    }
-
-    function pushPhotoUpdate(photos) {
-      set(ref(database, `rooms/${currentRoom}/photos`), photos);
+      // Connect once DOM resolves
+      window.connectFirebaseRoom();
+    } catch (e) {
+      console.warn("Firebase module load error. Fallback to local mode:", e);
     }
   </script>
 </body>
