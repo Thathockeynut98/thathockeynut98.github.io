@@ -1,0 +1,1420 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SyncSpace - Collaborative Room & Chat</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        .custom-scrollbar::-webkit-scrollbar {
+            width: 6px;
+            height: 6px;
+        }
+        .custom-scrollbar::-webkit-scrollbar-track {
+            background: rgba(15, 23, 42, 0.6);
+        }
+        .custom-scrollbar::-webkit-scrollbar-thumb {
+            background: rgba(71, 85, 105, 0.6);
+            border-radius: 9999px;
+        }
+        .custom-scrollbar::-webkit-scrollbar-thumb:hover {
+            background: rgba(99, 102, 241, 0.8);
+        }
+    </style>
+</head>
+<body class="bg-slate-950 text-slate-100 font-sans min-h-screen flex flex-col justify-between overflow-x-hidden">
+
+    <!-- Toast Notification Overlay -->
+    <div id="toastContainer" class="fixed top-4 right-4 z-50 flex flex-col gap-2 pointer-events-none"></div>
+
+    <!-- App Header -->
+    <header class="bg-slate-900/80 border-b border-slate-800 px-4 py-3 flex items-center justify-between backdrop-blur-md sticky top-0 z-40">
+        <div class="flex items-center space-x-3">
+            <div class="w-9 h-9 rounded-xl bg-gradient-to-tr from-indigo-600 via-purple-600 to-pink-500 flex items-center justify-center shadow-lg shadow-indigo-500/20">
+                <i class="fa-solid fa-shapes text-white text-lg"></i>
+            </div>
+            <div>
+                <h1 class="font-bold text-base tracking-wide bg-gradient-to-r from-white via-indigo-200 to-indigo-400 bg-clip-text text-transparent">SyncSpace</h1>
+                <p id="userStatusTag" class="text-[11px] text-slate-400 font-medium">Connecting user...</p>
+            </div>
+        </div>
+
+        <!-- Room Header Controls (Hidden when in lobby) -->
+        <div id="activeRoomHeader" class="hidden flex items-center gap-2 sm:gap-4">
+            <div class="bg-slate-800/80 border border-slate-700/60 rounded-xl px-3 py-1.5 flex items-center gap-2 text-xs">
+                <span class="text-slate-400 hidden sm:inline">Room:</span>
+                <span id="activeRoomCodeDisplay" class="font-mono font-bold text-indigo-400 tracking-wider">------</span>
+                <button id="copyRoomCodeBtn" class="text-slate-400 hover:text-white transition ml-1" title="Copy Code">
+                    <i class="fa-solid fa-copy"></i>
+                </button>
+                <button id="copyShareLinkBtn" class="bg-indigo-600/30 hover:bg-indigo-600/50 text-indigo-300 px-2 py-0.5 rounded-lg text-[11px] font-medium transition ml-1 flex items-center gap-1" title="Copy Shareable Link">
+                    <i class="fa-solid fa-link"></i>
+                    <span class="hidden md:inline">Share Link</span>
+                </button>
+            </div>
+
+            <button id="heartbeatBtn" class="bg-rose-600/20 border border-rose-500/40 hover:bg-rose-600/30 text-rose-300 p-2 rounded-xl text-xs transition flex items-center gap-1.5" title="Send Heartbeat Pulse">
+                <i class="fa-solid fa-heart animate-pulse"></i>
+                <span class="hidden md:inline">Pulse</span>
+            </button>
+
+            <button id="leaveRoomBtn" class="bg-slate-800 hover:bg-slate-700 text-slate-300 p-2 sm:px-3 sm:py-1.5 rounded-xl text-xs font-medium transition flex items-center gap-1.5 border border-slate-700">
+                <i class="fa-solid fa-right-from-bracket"></i>
+                <span class="hidden sm:inline">Leave</span>
+            </button>
+        </div>
+    </header>
+
+    <!-- Main Container -->
+    <main class="flex-1 flex flex-col p-3 sm:p-5 max-w-7xl w-full mx-auto">
+        
+        <!-- LOBBY SCREEN -->
+        <div id="lobbyScreen" class="flex-1 flex flex-col items-center justify-center py-8">
+            <div class="max-w-md w-full bg-slate-900/90 border border-slate-800 rounded-2xl p-6 sm:p-8 shadow-2xl backdrop-blur-md space-y-6">
+                <div class="text-center space-y-2">
+                    <h2 class="text-2xl font-bold text-white">Join or Create Room</h2>
+                    <p class="text-xs text-slate-400">Collaborate with real-time docs, snapshots, ambient audio, and live sketchpad.</p>
+                </div>
+
+                <div class="space-y-4">
+                    <div>
+                        <label class="block text-xs font-semibold text-slate-300 mb-1.5">Your Display Name</label>
+                        <div class="relative">
+                            <i class="fa-solid fa-user absolute left-3.5 top-3 text-slate-500 text-xs"></i>
+                            <input type="text" id="usernameInput" placeholder="Enter name..." 
+                                class="w-full bg-slate-950 border border-slate-800 rounded-xl pl-9 pr-4 py-2.5 text-sm text-slate-100 placeholder-slate-600 focus:outline-none focus:border-indigo-500 transition">
+                        </div>
+                    </div>
+
+                    <div class="pt-2 border-t border-slate-800/80 space-y-3">
+                        <button id="createRoomBtn" class="w-full bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-500 hover:to-purple-500 text-white font-medium py-2.5 rounded-xl text-sm transition shadow-lg shadow-indigo-600/25 flex items-center justify-center gap-2">
+                            <i class="fa-solid fa-plus"></i> Create New Room
+                        </button>
+
+                        <div class="flex items-center my-3">
+                            <div class="flex-1 border-t border-slate-800"></div>
+                            <span class="px-3 text-[11px] text-slate-500 uppercase tracking-wider font-semibold">Or</span>
+                            <div class="flex-1 border-t border-slate-800"></div>
+                        </div>
+
+                        <div class="flex gap-2">
+                            <input type="text" id="joinRoomInput" placeholder="Enter Room Code" uppercase
+                                class="flex-1 bg-slate-950 border border-slate-800 rounded-xl px-3.5 py-2 text-sm text-slate-100 font-mono placeholder-slate-600 uppercase tracking-wider focus:outline-none focus:border-indigo-500 transition">
+                            <button id="joinRoomBtn" class="bg-slate-800 hover:bg-slate-700 text-white font-medium px-4 py-2 rounded-xl text-sm border border-slate-700 transition">
+                                Join
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- ROOM WORKSPACE SCREEN -->
+        <div id="roomWorkspace" class="hidden flex-1 grid grid-cols-1 lg:grid-cols-3 gap-4 h-[calc(100vh-100px)] min-h-[550px]">
+            
+            <!-- Left Side: Interactive Collaboration Workspace (2 cols on LG) -->
+            <div class="lg:col-span-2 bg-slate-900/80 border border-slate-800 rounded-2xl flex flex-col overflow-hidden shadow-xl backdrop-blur-md">
+                
+                <!-- Room Workspace View Header Tabs -->
+                <div class="p-3 border-b border-slate-800/80 flex items-center justify-between gap-2 bg-slate-950/40">
+                    <div class="flex bg-slate-950 p-1 rounded-xl border border-slate-800/80 text-xs overflow-x-auto custom-scrollbar w-full">
+                        <button id="tabNotes" class="px-3 py-1.5 rounded-lg font-medium bg-indigo-600 text-white transition whitespace-nowrap">Shared Doc</button>
+                        <button id="tabBoard" class="px-3 py-1.5 rounded-lg font-medium text-slate-400 hover:text-white transition whitespace-nowrap">Quick Cards</button>
+                        <button id="tabPhotos" class="px-3 py-1.5 rounded-lg font-medium text-slate-400 hover:text-white transition whitespace-nowrap">Photo Wall</button>
+                        <button id="tabMedia" class="px-3 py-1.5 rounded-lg font-medium text-slate-400 hover:text-white transition whitespace-nowrap">Watch & Ambient</button>
+                        <button id="tabSleep" class="px-3 py-1.5 rounded-lg font-medium text-slate-400 hover:text-white transition whitespace-nowrap"><i class="fa-solid fa-moon text-indigo-400 mr-1"></i> Sleep Space</button>
+                        <button id="tabCanvas" class="px-3 py-1.5 rounded-lg font-medium text-slate-400 hover:text-white transition whitespace-nowrap">Sketch Canvas</button>
+                        <button id="tabMood" class="px-3 py-1.5 rounded-lg font-medium text-slate-400 hover:text-white transition whitespace-nowrap">Mood & Distance</button>
+                    </div>
+                </div>
+
+                <!-- Collaborative Content Views Container -->
+                <div class="flex-1 p-4 overflow-y-auto custom-scrollbar flex flex-col relative bg-slate-900/30">
+                    
+                    <!-- View 1: Real-time Synchronized Document -->
+                    <div id="notesView" class="flex-1 flex flex-col space-y-2">
+                        <div class="flex items-center justify-between text-xs text-slate-400">
+                            <span><i class="fa-solid fa-file-lines mr-1 text-indigo-400"></i> Synchronized Document</span>
+                            <span class="text-slate-500">Auto-saved to room</span>
+                        </div>
+                        <textarea id="sharedDoc" placeholder="Type notes, ideas, or shared goals here in real-time..."
+                            class="flex-1 w-full bg-slate-950/90 border border-slate-800 rounded-xl p-3.5 text-sm text-slate-200 placeholder-slate-600 focus:outline-none focus:border-indigo-500/80 resize-none font-mono leading-relaxed custom-scrollbar min-h-[300px]"></textarea>
+                    </div>
+
+                    <!-- View 2: Quick Collaborative Scratchpad / Cards -->
+                    <div id="boardView" class="hidden flex-1 flex flex-col space-y-3">
+                        <div class="flex items-center justify-between text-xs text-slate-400">
+                            <span><i class="fa-solid fa-sticky-note mr-1 text-amber-400"></i> Shared Quick Cards</span>
+                            <span class="text-slate-500">Key takeaways or quick ideas</span>
+                        </div>
+                        <div id="notesList" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 overflow-y-auto max-h-[calc(100vh-250px)] p-1 custom-scrollbar flex-1">
+                            <!-- Cards inserted dynamically -->
+                        </div>
+                        <div class="flex gap-2 pt-2 border-t border-slate-800/80">
+                            <input type="text" id="newNoteInput" placeholder="Add a quick shared note card..." 
+                                class="flex-1 bg-slate-950 border border-slate-800 rounded-xl px-3.5 py-2 text-xs text-slate-200 focus:outline-none focus:border-indigo-500">
+                            <button id="addNoteBtn" class="bg-amber-600 hover:bg-amber-500 text-white font-medium px-4 py-2 rounded-xl text-xs transition shrink-0">
+                                Add Note
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- View 3: Photo Wall & Gallery -->
+                    <div id="photosView" class="hidden flex-1 flex flex-col space-y-3">
+                        <div class="flex items-center justify-between text-xs text-slate-400">
+                            <span><i class="fa-solid fa-camera-retro mr-1 text-rose-400"></i> Shared Photo Wall</span>
+                            <span class="text-slate-500">Paste image links to create a collage</span>
+                        </div>
+                        <div id="photosGrid" class="grid grid-cols-2 sm:grid-cols-3 gap-3 overflow-y-auto max-h-[calc(100vh-270px)] p-1 custom-scrollbar flex-1">
+                            <!-- Photo cards inserted dynamically -->
+                        </div>
+                        <div class="flex flex-col sm:flex-row gap-2 pt-2 bg-slate-950 p-2.5 rounded-xl border border-slate-800">
+                            <input type="url" id="photoUrlInput" placeholder="Paste image URL (https://...)" 
+                                class="flex-1 bg-slate-900 border border-slate-800 rounded-xl px-3 py-1.5 text-xs text-slate-200 focus:outline-none focus:border-indigo-500">
+                            <input type="text" id="photoCaptionInput" placeholder="Caption..." 
+                                class="w-full sm:w-32 bg-slate-900 border border-slate-800 rounded-xl px-3 py-1.5 text-xs text-slate-200 focus:outline-none focus:border-indigo-500">
+                            <button id="addPhotoBtn" class="bg-rose-600 hover:bg-rose-500 text-white font-medium px-4 py-1.5 rounded-xl text-xs transition shrink-0">
+                                Post Photo
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- View 4: Watch Together & Ambient Audio Streams -->
+                    <div id="mediaView" class="hidden flex-1 flex flex-col space-y-4">
+                        <div class="bg-slate-950/80 border border-slate-800 p-3.5 rounded-xl space-y-2.5">
+                            <h3 class="text-xs font-semibold text-slate-200 flex items-center justify-between">
+                                <span class="flex items-center gap-2"><i class="fa-solid fa-headphones text-indigo-400"></i> Ambient Soundscapes</span>
+                                <span id="activeAmbientLabel" class="text-[11px] text-indigo-400 font-normal">Off</span>
+                            </h3>
+                            <div class="grid grid-cols-2 sm:grid-cols-4 gap-2">
+                                <button data-sound="lofi" class="ambient-btn p-2.5 bg-slate-900 hover:bg-slate-800 border border-slate-800 rounded-xl text-xs font-medium text-left transition flex items-center gap-2 text-slate-300">
+                                    <i class="fa-solid fa-music text-indigo-400"></i> Lo-Fi Beats
+                                </button>
+                                <button data-sound="rain" class="ambient-btn p-2.5 bg-slate-900 hover:bg-slate-800 border border-slate-800 rounded-xl text-xs font-medium text-left transition flex items-center gap-2 text-slate-300">
+                                    <i class="fa-solid fa-cloud-showers-heavy text-blue-400"></i> Rainy Cafe
+                                </button>
+                                <button data-sound="fire" class="ambient-btn p-2.5 bg-slate-900 hover:bg-slate-800 border border-slate-800 rounded-xl text-xs font-medium text-left transition flex items-center gap-2 text-slate-300">
+                                    <i class="fa-solid fa-fire text-amber-500"></i> Fireplace
+                                </button>
+                                <button data-sound="waves" class="ambient-btn p-2.5 bg-slate-900 hover:bg-slate-800 border border-slate-800 rounded-xl text-xs font-medium text-left transition flex items-center gap-2 text-slate-300">
+                                    <i class="fa-solid fa-water text-cyan-400"></i> Ocean Waves
+                                </button>
+                            </div>
+                        </div>
+
+                        <div class="bg-slate-950/80 border border-slate-800 p-3.5 rounded-xl space-y-3 flex-1 flex flex-col">
+                            <div class="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2">
+                                <h3 class="text-xs font-semibold text-slate-200 flex items-center gap-2">
+                                    <i class="fa-brands fa-youtube text-red-500"></i> Watch Together Sync
+                                </h3>
+                                <div class="flex items-center gap-2 w-full sm:w-auto">
+                                    <input type="text" id="youtubeUrlInput" placeholder="Paste YouTube Link or Video ID" 
+                                        class="flex-1 sm:w-60 bg-slate-900 border border-slate-800 rounded-lg px-3 py-1.5 text-xs text-slate-200 focus:outline-none focus:border-indigo-500">
+                                    <button id="loadVideoBtn" class="bg-red-600 hover:bg-red-500 text-white font-medium px-3 py-1.5 rounded-lg text-xs transition shrink-0">
+                                        Sync Video
+                                    </button>
+                                </div>
+                            </div>
+
+                            <div class="flex-1 min-h-[220px] bg-black rounded-xl overflow-hidden border border-slate-800 relative">
+                                <iframe id="ytPlayer" class="w-full h-full min-h-[220px]" src="https://www.youtube-nocookie.com/embed/jfKfPfyJRdk?enablejsapi=1" 
+                                    title="Synchronized Video Player" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- View 5: Muse-Style Sleep Space & Bedtime Zone -->
+                    <div id="sleepView" class="hidden flex-1 flex flex-col space-y-4">
+                        <div class="bg-gradient-to-r from-indigo-950/80 via-slate-900 to-purple-950/80 border border-indigo-900/50 p-4 rounded-2xl space-y-4 shadow-xl relative overflow-hidden">
+                            <div class="absolute -top-10 -right-10 w-32 h-32 bg-indigo-500/10 rounded-full blur-2xl pointer-events-none"></div>
+                            
+                            <div class="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 border-b border-indigo-900/40 pb-3">
+                                <div>
+                                    <h3 class="text-sm font-semibold text-indigo-200 flex items-center gap-2">
+                                        <i class="fa-solid fa-moon text-indigo-400"></i> Bedtime & Rest Sync
+                                    </h3>
+                                    <p class="text-[11px] text-slate-400">Wind down together, track bedtime status, and share night thoughts.</p>
+                                </div>
+
+                                <button id="toggleSleepModeBtn" class="bg-indigo-900/60 hover:bg-indigo-800/80 border border-indigo-700/60 text-indigo-200 px-3.5 py-1.5 rounded-xl text-xs font-medium transition flex items-center gap-2 shrink-0">
+                                    <i class="fa-solid fa-bed text-indigo-400"></i>
+                                    <span id="sleepModeStatusText">Set Status: Going to Bed</span>
+                                </button>
+                            </div>
+
+                            <!-- Sleep Sounds & Digital Wind-Down -->
+                            <div class="space-y-2">
+                                <div class="flex items-center justify-between">
+                                    <span class="text-xs font-semibold text-slate-300 flex items-center gap-1.5">
+                                        <i class="fa-solid fa-cloud-moon text-purple-400"></i> Night Relaxation Sounds
+                                    </span>
+                                    <span id="sleepTimerLabel" class="text-[11px] text-slate-400">Timer: Off</span>
+                                </div>
+
+                                <div class="grid grid-cols-2 sm:grid-cols-4 gap-2">
+                                    <button data-sleep-sound="rain" class="sleep-sound-btn p-2.5 bg-slate-950/80 hover:bg-slate-900 border border-slate-800 rounded-xl text-xs text-left transition flex flex-col gap-1">
+                                        <span class="font-medium text-slate-200 flex items-center gap-1.5"><i class="fa-solid fa-cloud-rain text-blue-400"></i> Rain Shower</span>
+                                        <span class="text-[10px] text-slate-500">Soft lullaby rain</span>
+                                    </button>
+                                    <button data-sleep-sound="space" class="sleep-sound-btn p-2.5 bg-slate-950/80 hover:bg-slate-900 border border-slate-800 rounded-xl text-xs text-left transition flex flex-col gap-1">
+                                        <span class="font-medium text-slate-200 flex items-center gap-1.5"><i class="fa-solid fa-star text-amber-300"></i> Deep Space</span>
+                                        <span class="text-[10px] text-slate-500">Calm ambient tone</span>
+                                    </button>
+                                    <button data-sleep-sound="fire" class="sleep-sound-btn p-2.5 bg-slate-950/80 hover:bg-slate-900 border border-slate-800 rounded-xl text-xs text-left transition flex flex-col gap-1">
+                                        <span class="font-medium text-slate-200 flex items-center gap-1.5"><i class="fa-solid fa-fire text-amber-500"></i> Hearth Fire</span>
+                                        <span class="text-[10px] text-slate-500">Warm wood crackle</span>
+                                    </button>
+                                    <button data-sleep-sound="waves" class="sleep-sound-btn p-2.5 bg-slate-950/80 hover:bg-slate-900 border border-slate-800 rounded-xl text-xs text-left transition flex flex-col gap-1">
+                                        <span class="font-medium text-slate-200 flex items-center gap-1.5"><i class="fa-solid fa-water text-cyan-400"></i> Night Tide</span>
+                                        <span class="text-[10px] text-slate-500">Gentle ocean wave</span>
+                                    </button>
+                                </div>
+
+                                <div class="flex items-center gap-3 pt-2">
+                                    <span class="text-[11px] text-slate-400">Sleep Timer:</span>
+                                    <button class="sleep-timer-btn px-2.5 py-1 bg-slate-950 border border-slate-800 rounded-lg text-[11px] text-slate-300 hover:text-white" data-minutes="15">15m</button>
+                                    <button class="sleep-timer-btn px-2.5 py-1 bg-slate-950 border border-slate-800 rounded-lg text-[11px] text-slate-300 hover:text-white" data-minutes="30">30m</button>
+                                    <button class="sleep-timer-btn px-2.5 py-1 bg-slate-950 border border-slate-800 rounded-lg text-[11px] text-slate-300 hover:text-white" data-minutes="60">60m</button>
+                                    <button id="stopSleepSoundBtn" class="ml-auto text-[11px] text-rose-400 hover:text-rose-300">Stop Audio</button>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Goodnight / Morning Notes -->
+                        <div class="bg-slate-950 border border-slate-800 rounded-xl p-4 space-y-3">
+                            <h3 class="text-xs font-semibold text-indigo-300 flex items-center gap-1.5">
+                                <i class="fa-solid fa-envelope-open-text"></i> Goodnight & Morning Notes
+                            </h3>
+                            <div class="flex gap-2">
+                                <input type="text" id="sleepNoteInput" placeholder="Leave a sweet goodnight message or morning note..." 
+                                    class="flex-1 bg-slate-900 border border-slate-800 rounded-xl px-3.5 py-2 text-xs text-slate-200 focus:outline-none focus:border-indigo-500">
+                                <button id="sendSleepNoteBtn" class="bg-indigo-600 hover:bg-indigo-500 text-white font-medium px-4 py-2 rounded-xl text-xs transition shrink-0">
+                                    Send Note
+                                </button>
+                            </div>
+                            <div id="sleepNotesList" class="space-y-2 max-h-48 overflow-y-auto custom-scrollbar pt-1">
+                                <!-- Sleep notes populated dynamically -->
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- View 6: Collaborative Sketch Canvas -->
+                    <div id="canvasView" class="hidden flex-1 flex flex-col space-y-2">
+                        <div class="flex items-center justify-between text-xs text-slate-400">
+                            <span><i class="fa-solid fa-pen-ruler mr-1 text-indigo-400"></i> Interactive Sketchpad</span>
+                            <button id="clearCanvasBtn" class="bg-slate-800 hover:bg-slate-700 text-slate-300 px-2.5 py-1 rounded-lg text-xs transition border border-slate-700">
+                                Clear Canvas
+                            </button>
+                        </div>
+                        <div class="flex-1 min-h-[280px] bg-slate-950 rounded-xl overflow-hidden border border-slate-800 relative">
+                            <canvas id="sketchCanvas" class="w-full h-full cursor-crosshair touch-none"></canvas>
+                        </div>
+                    </div>
+
+                    <!-- View 7: Mood & Distance Tracker -->
+                    <div id="moodView" class="hidden flex-1 flex flex-col space-y-4">
+                        <div class="bg-slate-950 border border-slate-800 p-4 rounded-xl space-y-3">
+                            <h3 class="text-xs font-semibold text-slate-300 flex items-center gap-2">
+                                <i class="fa-solid fa-face-smile text-amber-400"></i> How are you feeling right now?
+                            </h3>
+                            <div class="grid grid-cols-2 sm:grid-cols-4 gap-2 text-xs">
+                                <button data-mood="Working 💻" class="mood-option p-2 bg-slate-900 hover:bg-slate-800 border border-slate-800 rounded-xl text-left transition text-slate-200">
+                                    💻 Working
+                                </button>
+                                <button data-mood="Missing You ❤️" class="mood-option p-2 bg-slate-900 hover:bg-slate-800 border border-slate-800 rounded-xl text-left transition text-slate-200">
+                                    ❤️ Missing You
+                                </button>
+                                <button data-mood="Chilling ☕" class="mood-option p-2 bg-slate-900 hover:bg-slate-800 border border-slate-800 rounded-xl text-left transition text-slate-200">
+                                    ☕ Chilling
+                                </button>
+                                <button data-mood="Sleepy 🌙" class="mood-option p-2 bg-slate-900 hover:bg-slate-800 border border-slate-800 rounded-xl text-left transition text-slate-200">
+                                    🌙 Sleepy
+                                </button>
+                            </div>
+                        </div>
+
+                        <div class="bg-slate-950 border border-slate-800 p-4 rounded-xl space-y-3 flex-1">
+                            <h3 class="text-xs font-semibold text-slate-300 flex items-center gap-2">
+                                <i class="fa-solid fa-users text-indigo-400"></i> Room Members & Current Status
+                            </h3>
+                            <div id="membersMoodList" class="space-y-2 text-xs">
+                                <!-- Member moods rendered dynamically -->
+                            </div>
+                        </div>
+                    </div>
+
+                </div>
+            </div>
+
+            <!-- Right Side: Real-Time Chat & Room Members Bar (1 col on LG) -->
+            <div class="bg-slate-900/80 border border-slate-800 rounded-2xl flex flex-col overflow-hidden shadow-xl backdrop-blur-md h-full">
+                <!-- Room Presence Header -->
+                <div class="p-3 border-b border-slate-800/80 flex items-center justify-between bg-slate-950/40">
+                    <div class="flex items-center gap-2">
+                        <i class="fa-solid fa-users text-indigo-400 text-xs"></i>
+                        <span class="text-xs font-semibold text-slate-200">Active Presence</span>
+                    </div>
+                    <span id="userCountBadge" class="bg-indigo-600/20 text-indigo-300 text-[11px] font-medium px-2 py-0.5 rounded-full border border-indigo-500/30">
+                        1 Online
+                    </span>
+                </div>
+
+                <!-- Active Users Pill Badges -->
+                <div id="activeUsersList" class="px-3 py-2 border-b border-slate-800/60 flex flex-wrap gap-1.5 bg-slate-950/20 max-h-24 overflow-y-auto custom-scrollbar">
+                    <!-- Users inserted dynamically -->
+                </div>
+
+                <!-- Live Chat Feed -->
+                <div class="flex-1 p-3 overflow-y-auto custom-scrollbar flex flex-col space-y-3" id="chatMessages">
+                    <div class="text-center text-[11px] text-slate-500 my-auto py-4">
+                        Messages sent here will sync live with everyone in the room.
+                    </div>
+                </div>
+
+                <!-- Live Chat Input Box -->
+                <form id="chatForm" class="p-3 border-t border-slate-800/80 bg-slate-950/60 flex gap-2">
+                    <input type="text" id="chatInput" placeholder="Type message..." autocomplete="off"
+                        class="flex-1 bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-xs text-slate-100 placeholder-slate-600 focus:outline-none focus:border-indigo-500 transition">
+                    <button type="submit" class="bg-indigo-600 hover:bg-indigo-500 text-white font-medium px-3.5 py-2 rounded-xl text-xs transition shrink-0 flex items-center justify-center">
+                        <i class="fa-solid fa-paper-plane"></i>
+                    </button>
+                </form>
+            </div>
+
+        </div>
+    </main>
+
+    <!-- Firebase SDK Imports -->
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
+        import { getAuth, signInAnonymously } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+        import { getFirestore, doc, setDoc, getDoc, updateDoc, onSnapshot, collection, addDoc, deleteDoc } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+
+        // Global state and fallback system for robust operation
+        let useMockBackend = false;
+        let mockState = {
+            rooms: {}
+        };
+        let mockListeners = [];
+
+        // App State
+        let currentUserId = 'user_' + Math.random().toString(36).substring(2, 8);
+        let displayName = '';
+        let activeRoomId = null;
+        let isSelfTyping = false;
+        let isSleeping = false;
+        let sleepTimerTimeout = null;
+
+        // Listener references
+        let roomUnsub = null;
+        let usersUnsub = null;
+        let chatUnsub = null;
+        let notesUnsub = null;
+        let photosUnsub = null;
+        let sleepNotesUnsub = null;
+
+        // UI Element References
+        const lobbyScreen = document.getElementById('lobbyScreen');
+        const roomWorkspace = document.getElementById('roomWorkspace');
+        const activeRoomHeader = document.getElementById('activeRoomHeader');
+        const activeRoomCodeDisplay = document.getElementById('activeRoomCodeDisplay');
+        const usernameInput = document.getElementById('usernameInput');
+        const createRoomBtn = document.getElementById('createRoomBtn');
+        const joinRoomInput = document.getElementById('joinRoomInput');
+        const joinRoomBtn = document.getElementById('joinRoomBtn');
+        const leaveRoomBtn = document.getElementById('leaveRoomBtn');
+        const copyRoomCodeBtn = document.getElementById('copyRoomCodeBtn');
+        const copyShareLinkBtn = document.getElementById('copyShareLinkBtn');
+        const heartbeatBtn = document.getElementById('heartbeatBtn');
+        const userStatusTag = document.getElementById('userStatusTag');
+
+        // Workspace Navigation Tabs
+        const tabNotes = document.getElementById('tabNotes');
+        const tabBoard = document.getElementById('tabBoard');
+        const tabPhotos = document.getElementById('tabPhotos');
+        const tabMedia = document.getElementById('tabMedia');
+        const tabSleep = document.getElementById('tabSleep');
+        const tabCanvas = document.getElementById('tabCanvas');
+        const tabMood = document.getElementById('tabMood');
+
+        const notesView = document.getElementById('notesView');
+        const boardView = document.getElementById('boardView');
+        const photosView = document.getElementById('photosView');
+        const mediaView = document.getElementById('mediaView');
+        const sleepView = document.getElementById('sleepView');
+        const canvasView = document.getElementById('canvasView');
+        const moodView = document.getElementById('moodView');
+
+        // Workspace Inputs & Displays
+        const sharedDoc = document.getElementById('sharedDoc');
+        const newNoteInput = document.getElementById('newNoteInput');
+        const addNoteBtn = document.getElementById('addNoteBtn');
+        const notesList = document.getElementById('notesList');
+
+        const photoUrlInput = document.getElementById('photoUrlInput');
+        const photoCaptionInput = document.getElementById('photoCaptionInput');
+        const addPhotoBtn = document.getElementById('addPhotoBtn');
+        const photosGrid = document.getElementById('photosGrid');
+
+        const youtubeUrlInput = document.getElementById('youtubeUrlInput');
+        const loadVideoBtn = document.getElementById('loadVideoBtn');
+        const ytPlayer = document.getElementById('ytPlayer');
+        const activeAmbientLabel = document.getElementById('activeAmbientLabel');
+        let currentAudioStream = null;
+
+        const toggleSleepModeBtn = document.getElementById('toggleSleepModeBtn');
+        const sleepModeStatusText = document.getElementById('sleepModeStatusText');
+        const sleepTimerLabel = document.getElementById('sleepTimerLabel');
+        const stopSleepSoundBtn = document.getElementById('stopSleepSoundBtn');
+        const sleepNoteInput = document.getElementById('sleepNoteInput');
+        const sendSleepNoteBtn = document.getElementById('sendSleepNoteBtn');
+        const sleepNotesList = document.getElementById('sleepNotesList');
+
+        const sketchCanvas = document.getElementById('sketchCanvas');
+        const clearCanvasBtn = document.getElementById('clearCanvasBtn');
+
+        const activeUsersList = document.getElementById('activeUsersList');
+        const userCountBadge = document.getElementById('userCountBadge');
+        const chatMessages = document.getElementById('chatMessages');
+        const chatForm = document.getElementById('chatForm');
+        const chatInput = document.getElementById('chatInput');
+        const membersMoodList = document.getElementById('membersMoodList');
+
+        // Toast Helper
+        function showToast(msg, type = "info") {
+            const toastContainer = document.getElementById('toastContainer');
+            if (!toastContainer) return;
+            const toast = document.createElement('div');
+            const bgClass = type === 'error' ? 'bg-rose-600' : type === 'success' ? 'bg-emerald-600' : 'bg-indigo-600';
+            toast.className = `${bgClass} text-white text-xs px-4 py-2.5 rounded-xl shadow-lg transition-all duration-300 opacity-0 transform translate-y-2 pointer-events-auto flex items-center gap-2`;
+            toast.innerHTML = `<span>${escapeHTML(msg)}</span>`;
+            toastContainer.appendChild(toast);
+
+            setTimeout(() => {
+                toast.classList.remove('opacity-0', 'translate-y-2');
+            }, 10);
+
+            setTimeout(() => {
+                toast.classList.add('opacity-0', 'translate-y-2');
+                setTimeout(() => toast.remove(), 300);
+            }, 3000);
+        }
+
+        function escapeHTML(str) {
+            return String(str || '').replace(/[&<>"']/g, match => {
+                const map = { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' };
+                return map[match];
+            });
+        }
+
+        // Firebase Setup & Fallback Auth Logic
+        let auth, db, appId;
+
+        async function initAuth() {
+            let configValid = false;
+            if (typeof __firebase_config !== 'undefined' && __firebase_config.apiKey && __firebase_config.apiKey !== 'demo-api-key') {
+                configValid = true;
+            }
+
+            if (configValid) {
+                try {
+                    const firebaseConfig = __firebase_config;
+                    const app = initializeApp(firebaseConfig);
+                    auth = getAuth(app);
+                    db = getFirestore(app);
+                    appId = typeof __app_id !== 'undefined' ? __app_id : 'sync-space-app';
+
+                    const userCred = await signInAnonymously(auth);
+                    currentUserId = userCred.user.uid;
+                    if (userStatusTag) userStatusTag.textContent = `Online • ID: ${currentUserId.slice(0, 6)}`;
+                    return;
+                } catch (error) {
+                    // Fallback driver
+                }
+            }
+
+            // Fallback Mode (Local / In-Memory Mock Backend)
+            useMockBackend = true;
+            if (userStatusTag) userStatusTag.textContent = `Standalone Mode • ID: ${currentUserId.slice(0, 6)}`;
+            showToast("Connected in Standalone Mode", "info");
+        }
+
+        // Mock Helper Event Bus
+        function triggerMockUpdate(roomId) {
+            mockListeners.forEach(cb => cb(roomId));
+        }
+
+        // Room Operations
+        if (createRoomBtn) {
+            createRoomBtn.addEventListener('click', async () => {
+                const name = usernameInput.value.trim() || 'User_' + Math.floor(Math.random() * 899 + 100);
+                displayName = name;
+                const code = Math.random().toString(36).substring(2, 8).toUpperCase();
+
+                if (useMockBackend) {
+                    mockState.rooms[code] = {
+                        createdAt: Date.now(),
+                        documentText: "Welcome to your shared workspace doc! Anything typed here updates live.",
+                        videoUrl: "https://www.youtube-nocookie.com/embed/jfKfPfyJRdk?enablejsapi=1",
+                        users: {},
+                        messages: [],
+                        notes: [],
+                        photos: [],
+                        sleepNotes: []
+                    };
+                    await enterRoom(code);
+                } else {
+                    try {
+                        await setDoc(doc(db, 'artifacts', appId, 'public', 'data', 'rooms', code), {
+                            createdAt: Date.now(),
+                            documentText: "Welcome to your shared workspace doc! Anything typed here updates live.",
+                            videoUrl: "https://www.youtube-nocookie.com/embed/jfKfPfyJRdk?enablejsapi=1"
+                        });
+                        await enterRoom(code);
+                    } catch (err) {
+                        showToast("Could not create room", "error");
+                    }
+                }
+            });
+        }
+
+        if (joinRoomBtn) {
+            joinRoomBtn.addEventListener('click', async () => {
+                const code = joinRoomInput.value.trim().toUpperCase();
+                if (!code) {
+                    showToast("Enter a room code", "error");
+                    return;
+                }
+                const name = usernameInput.value.trim() || 'User_' + Math.floor(Math.random() * 899 + 100);
+                displayName = name;
+
+                if (useMockBackend) {
+                    if (!mockState.rooms[code]) {
+                        showToast("Room code not found", "error");
+                        return;
+                    }
+                    await enterRoom(code);
+                } else {
+                    try {
+                        const snap = await getDoc(doc(db, 'artifacts', appId, 'public', 'data', 'rooms', code));
+                        if (!snap.exists()) {
+                            showToast("Room code not found", "error");
+                            return;
+                        }
+                        await enterRoom(code);
+                    } catch (err) {
+                        showToast("Error joining room", "error");
+                    }
+                }
+            });
+        }
+
+        async function enterRoom(code) {
+            activeRoomId = code;
+            if (activeRoomCodeDisplay) activeRoomCodeDisplay.textContent = code;
+
+            if (lobbyScreen) lobbyScreen.classList.add('hidden');
+            if (roomWorkspace) roomWorkspace.classList.remove('hidden');
+            if (activeRoomHeader) activeRoomHeader.classList.remove('hidden');
+
+            if (useMockBackend) {
+                if (mockState.rooms[code]) {
+                    mockState.rooms[code].users[currentUserId] = {
+                        name: displayName,
+                        mood: 'Working 💻',
+                        isSleeping: false,
+                        lastActive: Date.now()
+                    };
+                }
+            } else {
+                await setDoc(doc(db, 'artifacts', appId, 'public', 'data', 'rooms', code, 'users', currentUserId), {
+                    name: displayName,
+                    mood: 'Working 💻',
+                    isSleeping: false,
+                    lastActive: Date.now()
+                });
+            }
+
+            subscribeToRoom(code);
+            subscribeToUsers(code);
+            subscribeToChat(code);
+            subscribeToNotes(code);
+            subscribeToPhotos(code);
+            subscribeToSleepNotes(code);
+
+            window.location.hash = `room=${code}`;
+            showToast(`Joined room ${code}`, "success");
+        }
+
+        function leaveCurrentRoomListeners() {
+            if (roomUnsub) roomUnsub();
+            if (usersUnsub) usersUnsub();
+            if (chatUnsub) chatUnsub();
+            if (notesUnsub) notesUnsub();
+            if (photosUnsub) photosUnsub();
+            if (sleepNotesUnsub) sleepNotesUnsub();
+            if (currentAudioStream) {
+                currentAudioStream.pause();
+                currentAudioStream = null;
+            }
+        }
+
+        async function leaveRoom() {
+            if (activeRoomId && currentUserId) {
+                if (useMockBackend) {
+                    if (mockState.rooms[activeRoomId] && mockState.rooms[activeRoomId].users) {
+                        delete mockState.rooms[activeRoomId].users[currentUserId];
+                        triggerMockUpdate(activeRoomId);
+                    }
+                } else {
+                    try {
+                        await deleteDoc(doc(db, 'artifacts', appId, 'public', 'data', 'rooms', activeRoomId, 'users', currentUserId));
+                    } catch(e){}
+                }
+            }
+            leaveCurrentRoomListeners();
+            activeRoomId = null;
+            window.location.hash = '';
+            if (roomWorkspace) roomWorkspace.classList.add('hidden');
+            if (activeRoomHeader) activeRoomHeader.classList.add('hidden');
+            if (lobbyScreen) lobbyScreen.classList.remove('hidden');
+            showToast("Left room", "info");
+        }
+
+        if (leaveRoomBtn) leaveRoomBtn.addEventListener('click', leaveRoom);
+
+        if (copyRoomCodeBtn) {
+            copyRoomCodeBtn.addEventListener('click', () => {
+                if (activeRoomId) {
+                    copyToClipboard(activeRoomId);
+                    showToast("Room code copied!", "success");
+                }
+            });
+        }
+
+        if (copyShareLinkBtn) {
+            copyShareLinkBtn.addEventListener('click', () => {
+                if (activeRoomId) {
+                    // Ensure origin doesn't duplicate trailing slashes or corrupt protocol
+                    const baseUrl = window.location.href.split('#')[0];
+                    const shareUrl = `${baseUrl}#room=${activeRoomId}`;
+                    copyToClipboard(shareUrl);
+                    showToast("Direct share link copied to clipboard!", "success");
+                }
+            });
+        }
+
+        function copyToClipboard(text) {
+            const el = document.createElement('textarea');
+            el.value = text;
+            document.body.appendChild(el);
+            el.select();
+            document.execCommand('copy');
+            document.body.removeChild(el);
+        }
+
+        function checkUrlHashForRoom() {
+            const hash = window.location.hash;
+            if (hash && hash.includes('room=')) {
+                const roomCode = hash.split('room=')[1].split('&')[0].toUpperCase();
+                if (roomCode && joinRoomInput) {
+                    joinRoomInput.value = roomCode;
+                }
+            }
+        }
+
+        function subscribeToRoom(roomId) {
+            if (useMockBackend) {
+                const updateUI = () => {
+                    const room = mockState.rooms[roomId];
+                    if (!room) return;
+                    if (!isSelfTyping && sharedDoc && sharedDoc.value !== room.documentText) {
+                        sharedDoc.value = room.documentText || '';
+                    }
+                    if (room.videoUrl && ytPlayer && ytPlayer.src !== room.videoUrl) {
+                        ytPlayer.src = room.videoUrl;
+                    }
+                };
+                updateUI();
+                const listener = (rId) => { if (rId === roomId) updateUI(); };
+                mockListeners.push(listener);
+                roomUnsub = () => { mockListeners = mockListeners.filter(l => l !== listener); };
+            } else {
+                roomUnsub = onSnapshot(doc(db, 'artifacts', appId, 'public', 'data', 'rooms', roomId), (snapshot) => {
+                    if (!snapshot.exists()) {
+                        showToast("Room closed.", "error");
+                        leaveRoom();
+                        return;
+                    }
+                    const data = snapshot.data();
+                    if (data && data.documentText !== undefined && sharedDoc) {
+                        if (!isSelfTyping && sharedDoc.value !== data.documentText) {
+                            sharedDoc.value = data.documentText;
+                        }
+                    }
+                    if (data && data.videoUrl && ytPlayer && ytPlayer.src !== data.videoUrl) {
+                        ytPlayer.src = data.videoUrl;
+                    }
+                    if (data && data.pulseFrom && data.pulseFrom !== currentUserId) {
+                        showToast(`💖 ${data.pulseName || 'Someone'} sent a pulse!`, "success");
+                    }
+                });
+            }
+
+            let timeout = null;
+            if (sharedDoc) {
+                sharedDoc.addEventListener('input', () => {
+                    isSelfTyping = true;
+                    clearTimeout(timeout);
+                    timeout = setTimeout(async () => {
+                        if (!activeRoomId) return;
+                        if (useMockBackend) {
+                            if (mockState.rooms[activeRoomId]) {
+                                mockState.rooms[activeRoomId].documentText = sharedDoc.value;
+                                triggerMockUpdate(activeRoomId);
+                            }
+                        } else {
+                            try {
+                                await updateDoc(doc(db, 'artifacts', appId, 'public', 'data', 'rooms', activeRoomId), {
+                                    documentText: sharedDoc.value
+                                });
+                            } catch(e){}
+                        }
+                        isSelfTyping = false;
+                    }, 400);
+                });
+            }
+        }
+
+        if (heartbeatBtn) {
+            heartbeatBtn.addEventListener('click', async () => {
+                if (!activeRoomId) return;
+                if (useMockBackend) {
+                    showToast("💖 Pulse sent!", "success");
+                } else {
+                    try {
+                        await updateDoc(doc(db, 'artifacts', appId, 'public', 'data', 'rooms', activeRoomId), {
+                            pulseFrom: currentUserId,
+                            pulseName: displayName,
+                            pulseTime: Date.now()
+                        });
+                        showToast("Pulse sent to room!", "success");
+                    } catch(e){}
+                }
+            });
+        }
+
+        function subscribeToUsers(roomId) {
+            const renderUsers = (usersObj) => {
+                if (activeUsersList) activeUsersList.innerHTML = '';
+                if (membersMoodList) membersMoodList.innerHTML = '';
+                let count = 0;
+
+                Object.entries(usersObj || {}).forEach(([uId, user]) => {
+                    count++;
+                    const isMe = uId === currentUserId;
+
+                    if (activeUsersList) {
+                        const tag = document.createElement('span');
+                        const isUserSleeping = user.isSleeping || user.mood?.includes('Sleeping');
+                        tag.className = `px-2.5 py-1 rounded-lg text-xs font-medium border flex items-center gap-1.5 ${isMe ? 'bg-indigo-600/20 text-indigo-300 border-indigo-500/40' : 'bg-slate-800 text-slate-300 border-slate-700'}`;
+                        tag.innerHTML = `<span class="w-1.5 h-1.5 rounded-full ${isUserSleeping ? 'bg-indigo-400' : 'bg-emerald-400'}"></span> ${escapeHTML(user.name)}${isUserSleeping ? ' 🌙' : ''}${isMe ? ' (You)' : ''}`;
+                        activeUsersList.appendChild(tag);
+                    }
+
+                    if (membersMoodList) {
+                        const moodItem = document.createElement('div');
+                        moodItem.className = "flex items-center justify-between p-2 rounded-lg bg-slate-900 border border-slate-800";
+                        moodItem.innerHTML = `<span class="font-medium text-slate-200">${escapeHTML(user.name)}</span> <span class="text-indigo-400 font-mono">${escapeHTML(user.mood || 'Working 💻')}</span>`;
+                        membersMoodList.appendChild(moodItem);
+                    }
+                });
+
+                if (userCountBadge) userCountBadge.textContent = `${count} Online`;
+            };
+
+            if (useMockBackend) {
+                renderUsers(mockState.rooms[roomId]?.users);
+                const listener = (rId) => { if (rId === roomId) renderUsers(mockState.rooms[roomId]?.users); };
+                mockListeners.push(listener);
+                usersUnsub = () => { mockListeners = mockListeners.filter(l => l !== listener); };
+            } else {
+                usersUnsub = onSnapshot(collection(db, 'artifacts', appId, 'public', 'data', 'rooms', roomId, 'users'), (snapshot) => {
+                    const usersObj = {};
+                    snapshot.forEach(docSnap => { usersObj[docSnap.id] = docSnap.data(); });
+                    renderUsers(usersObj);
+                });
+            }
+        }
+
+        // Chat System
+        function subscribeToChat(roomId) {
+            const renderMessages = (msgs) => {
+                if (!chatMessages) return;
+                chatMessages.innerHTML = '';
+                msgs.forEach(m => {
+                    const isMe = m.senderId === currentUserId;
+                    const wrapper = document.createElement('div');
+                    wrapper.className = `flex flex-col ${isMe ? 'items-end' : 'items-start'}`;
+                    
+                    wrapper.innerHTML = `
+                        <div class="text-[10px] text-slate-500 mb-0.5 px-1">${escapeHTML(m.sender)}</div>
+                        <div class="max-w-[85%] px-3 py-2 rounded-2xl text-xs leading-relaxed ${isMe ? 'bg-indigo-600 text-white rounded-br-none' : 'bg-slate-800 text-slate-200 border border-slate-700 rounded-bl-none'}">
+                            ${escapeHTML(m.text)}
+                        </div>
+                    `;
+                    chatMessages.appendChild(wrapper);
+                });
+                chatMessages.scrollTop = chatMessages.scrollHeight;
+            };
+
+            if (useMockBackend) {
+                renderMessages(mockState.rooms[roomId]?.messages || []);
+                const listener = (rId) => { if (rId === roomId) renderMessages(mockState.rooms[roomId]?.messages || []); };
+                mockListeners.push(listener);
+                chatUnsub = () => { mockListeners = mockListeners.filter(l => l !== listener); };
+            } else {
+                chatUnsub = onSnapshot(collection(db, 'artifacts', appId, 'public', 'data', 'rooms', roomId, 'messages'), (snapshot) => {
+                    const msgs = [];
+                    snapshot.forEach(doc => { msgs.push({ id: doc.id, ...doc.data() }); });
+                    msgs.sort((a, b) => (a.timestamp || 0) - (b.timestamp || 0));
+                    renderMessages(msgs);
+                });
+            }
+        }
+
+        if (chatForm) {
+            chatForm.addEventListener('submit', async (e) => {
+                e.preventDefault();
+                if (!chatInput) return;
+                const text = chatInput.value.trim();
+                if (!text || !activeRoomId) return;
+                chatInput.value = '';
+
+                if (useMockBackend) {
+                    if (mockState.rooms[activeRoomId]) {
+                        mockState.rooms[activeRoomId].messages.push({
+                            id: Math.random().toString(36).substring(2, 9),
+                            text: text,
+                            sender: displayName,
+                            senderId: currentUserId,
+                            timestamp: Date.now()
+                        });
+                        triggerMockUpdate(activeRoomId);
+                    }
+                } else {
+                    try {
+                        await addDoc(collection(db, 'artifacts', appId, 'public', 'data', 'rooms', activeRoomId, 'messages'), {
+                            text: text,
+                            sender: displayName,
+                            senderId: currentUserId,
+                            timestamp: Date.now()
+                        });
+                    } catch (err) {
+                        showToast("Failed to send message", "error");
+                    }
+                }
+            });
+        }
+
+        // Notes System
+        function subscribeToNotes(roomId) {
+            if (useMockBackend) {
+                renderNotes(mockState.rooms[roomId]?.notes || []);
+                const listener = (rId) => { if (rId === roomId) renderNotes(mockState.rooms[roomId]?.notes || []); };
+                mockListeners.push(listener);
+                notesUnsub = () => { mockListeners = mockListeners.filter(l => l !== listener); };
+            } else {
+                notesUnsub = onSnapshot(collection(db, 'artifacts', appId, 'public', 'data', 'rooms', roomId, 'notes'), (snapshot) => {
+                    const notes = [];
+                    snapshot.forEach(doc => { notes.push({ id: doc.id, ...doc.data() }); });
+                    notes.sort((a, b) => (b.timestamp || 0) - (a.timestamp || 0));
+                    renderNotes(notes);
+                });
+            }
+        }
+
+        function renderNotes(notes) {
+            if (!notesList) return;
+            notesList.innerHTML = '';
+            if (notes.length === 0) {
+                notesList.innerHTML = `<div class="col-span-full text-center py-8 text-slate-500 text-xs">No cards yet. Add one below!</div>`;
+                return;
+            }
+            notes.forEach(note => {
+                const card = document.createElement('div');
+                card.className = "bg-slate-800 border border-slate-700 p-3 rounded-xl flex flex-col justify-between space-y-2 shadow-md";
+                card.innerHTML = `
+                    <p class="text-xs text-slate-200 font-medium whitespace-pre-wrap">${escapeHTML(note.text)}</p>
+                    <div class="flex items-center justify-between text-[10px] text-slate-400 pt-2 border-t border-slate-700/60">
+                        <span>${escapeHTML(note.author)}</span>
+                        <button class="delete-note-btn text-slate-500 hover:text-rose-400 transition" data-id="${note.id}">
+                            <i class="fa-solid fa-trash-can"></i>
+                        </button>
+                    </div>
+                `;
+                notesList.appendChild(card);
+            });
+
+            document.querySelectorAll('.delete-note-btn').forEach(btn => {
+                btn.addEventListener('click', async (e) => {
+                    const noteId = e.currentTarget.getAttribute('data-id');
+                    if (noteId && activeRoomId) {
+                        if (useMockBackend) {
+                            if (mockState.rooms[activeRoomId]) {
+                                mockState.rooms[activeRoomId].notes = mockState.rooms[activeRoomId].notes.filter(n => n.id !== noteId);
+                                triggerMockUpdate(activeRoomId);
+                            }
+                        } else {
+                            try { await deleteDoc(doc(db, 'artifacts', appId, 'public', 'data', 'rooms', activeRoomId, 'notes', noteId)); } catch(err){}
+                        }
+                    }
+                });
+            });
+        }
+
+        if (addNoteBtn) {
+            addNoteBtn.addEventListener('click', async () => {
+                if (!newNoteInput) return;
+                const text = newNoteInput.value.trim();
+                if (!text || !activeRoomId) return;
+                newNoteInput.value = '';
+
+                if (useMockBackend) {
+                    if (mockState.rooms[activeRoomId]) {
+                        mockState.rooms[activeRoomId].notes.unshift({
+                            id: Math.random().toString(36).substring(2, 9),
+                            text: text,
+                            author: displayName,
+                            authorId: currentUserId,
+                            timestamp: Date.now()
+                        });
+                        triggerMockUpdate(activeRoomId);
+                    }
+                } else {
+                    try {
+                        await addDoc(collection(db, 'artifacts', appId, 'public', 'data', 'rooms', activeRoomId, 'notes'), {
+                            text: text,
+                            author: displayName,
+                            authorId: currentUserId,
+                            timestamp: Date.now()
+                        });
+                    } catch (err) {
+                        showToast("Failed to add card", "error");
+                    }
+                }
+            });
+        }
+
+        // Photo Wall System
+        function subscribeToPhotos(roomId) {
+            if (useMockBackend) {
+                renderPhotos(mockState.rooms[roomId]?.photos || []);
+                const listener = (rId) => { if (rId === roomId) renderPhotos(mockState.rooms[roomId]?.photos || []); };
+                mockListeners.push(listener);
+                photosUnsub = () => { mockListeners = mockListeners.filter(l => l !== listener); };
+            } else {
+                photosUnsub = onSnapshot(collection(db, 'artifacts', appId, 'public', 'data', 'rooms', roomId, 'photos'), (snapshot) => {
+                    const photos = [];
+                    snapshot.forEach(doc => { photos.push({ id: doc.id, ...doc.data() }); });
+                    photos.sort((a, b) => (b.timestamp || 0) - (a.timestamp || 0));
+                    renderPhotos(photos);
+                });
+            }
+        }
+
+        function renderPhotos(photos) {
+            if (!photosGrid) return;
+            photosGrid.innerHTML = '';
+            if (photos.length === 0) {
+                photosGrid.innerHTML = `<div class="col-span-full text-center py-8 text-slate-500 text-xs">No photos shared yet. Paste an image URL below to pin a photo!</div>`;
+                return;
+            }
+            photos.forEach(photo => {
+                const card = document.createElement('div');
+                card.className = "bg-slate-800 border border-slate-700/80 rounded-xl overflow-hidden flex flex-col shadow-md group hover:border-indigo-500/50 transition";
+                card.innerHTML = `
+                    <div class="h-32 bg-slate-950 overflow-hidden relative">
+                        <img src="${escapeHTML(photo.url)}" alt="Snapshot" class="w-full h-full object-cover group-hover:scale-105 transition duration-300" 
+                            onerror="this.onerror=null;this.src='https://placehold.co/600x400/1e293b/94a3b8?text=Image+Unavailable';">
+                    </div>
+                    <div class="p-2 flex-1 flex flex-col justify-between space-y-1">
+                        <p class="text-xs text-slate-200 font-medium truncate">${escapeHTML(photo.caption || 'Photo Memory')}</p>
+                        <div class="flex items-center justify-between text-[10px] text-slate-400 pt-1 border-t border-slate-700/40">
+                            <span>By ${escapeHTML(photo.author || 'Member')}</span>
+                            <button class="delete-photo-btn text-slate-500 hover:text-rose-400 transition" data-id="${photo.id}">
+                                <i class="fa-solid fa-trash-can"></i>
+                            </button>
+                        </div>
+                    </div>
+                `;
+                photosGrid.appendChild(card);
+            });
+
+            document.querySelectorAll('.delete-photo-btn').forEach(btn => {
+                btn.addEventListener('click', async (e) => {
+                    const photoId = e.currentTarget.getAttribute('data-id');
+                    if (photoId && activeRoomId) {
+                        if (useMockBackend) {
+                            if (mockState.rooms[activeRoomId]) {
+                                mockState.rooms[activeRoomId].photos = mockState.rooms[activeRoomId].photos.filter(p => p.id !== photoId);
+                                triggerMockUpdate(activeRoomId);
+                            }
+                        } else {
+                            try { await deleteDoc(doc(db, 'artifacts', appId, 'public', 'data', 'rooms', activeRoomId, 'photos', photoId)); } catch(err){}
+                        }
+                    }
+                });
+            });
+        }
+
+        if (addPhotoBtn) {
+            addPhotoBtn.addEventListener('click', async () => {
+                if (!photoUrlInput || !photoCaptionInput) return;
+                const url = photoUrlInput.value.trim();
+                const caption = photoCaptionInput.value.trim();
+                if (!url || !activeRoomId) {
+                    showToast("Please enter an image URL", "error");
+                    return;
+                }
+                photoUrlInput.value = '';
+                photoCaptionInput.value = '';
+
+                if (useMockBackend) {
+                    if (mockState.rooms[activeRoomId]) {
+                        mockState.rooms[activeRoomId].photos.unshift({
+                            id: Math.random().toString(36).substring(2, 9),
+                            url: url,
+                            caption: caption,
+                            author: displayName,
+                            authorId: currentUserId,
+                            timestamp: Date.now()
+                        });
+                        triggerMockUpdate(activeRoomId);
+                        showToast("Photo posted!", "success");
+                    }
+                } else {
+                    try {
+                        await addDoc(collection(db, 'artifacts', appId, 'public', 'data', 'rooms', activeRoomId, 'photos'), {
+                            url: url,
+                            caption: caption,
+                            author: displayName,
+                            authorId: currentUserId,
+                            timestamp: Date.now()
+                        });
+                        showToast("Photo posted!", "success");
+                    } catch (err) {
+                        showToast("Failed to post photo", "error");
+                    }
+                }
+            });
+        }
+
+        // Watch Together & Ambient Audio Stream
+        if (loadVideoBtn) {
+            loadVideoBtn.addEventListener('click', async () => {
+                if (!youtubeUrlInput) return;
+                const val = youtubeUrlInput.value.trim();
+                if (!val || !activeRoomId) return;
+
+                let videoId = val;
+                if (val.includes('v=')) {
+                    videoId = val.split('v=')[1].split('&')[0];
+                } else if (val.includes('youtu.be/')) {
+                    videoId = val.split('youtu.be/')[1].split('?')[0];
+                }
+
+                const embedUrl = `https://www.youtube-nocookie.com/embed/${videoId}?autoplay=1&enablejsapi=1`;
+
+                if (useMockBackend) {
+                    if (mockState.rooms[activeRoomId]) {
+                        mockState.rooms[activeRoomId].videoUrl = embedUrl;
+                        triggerMockUpdate(activeRoomId);
+                        youtubeUrlInput.value = '';
+                        showToast("Video synced!", "success");
+                    }
+                } else {
+                    try {
+                        await updateDoc(doc(db, 'artifacts', appId, 'public', 'data', 'rooms', activeRoomId), { videoUrl: embedUrl });
+                        youtubeUrlInput.value = '';
+                        showToast("Video synced for room!", "success");
+                    } catch(e) {
+                        showToast("Error syncing video", "error");
+                    }
+                }
+            });
+        }
+
+        const ambientAudioMap = {
+            'lofi': 'https://cdn.pixabay.com/download/audio/2022/05/27/audio_1808fbf07a.mp3?filename=lofi-study-112191.mp3',
+            'rain': 'https://cdn.pixabay.com/download/audio/2021/09/06/audio_4d5b2bc2bb.mp3?filename=rain-and-thunder-142522.mp3',
+            'fire': 'https://cdn.pixabay.com/download/audio/2022/01/18/audio_d0a13f69d2.mp3?filename=crackling-fireplace-nature-sound-11003.mp3',
+            'waves': 'https://cdn.pixabay.com/download/audio/2022/03/24/audio_c36e4f3a74.mp3?filename=ocean-waves-ambient-110300.mp3',
+            'space': 'https://cdn.pixabay.com/download/audio/2022/01/18/audio_d0a13f69d2.mp3?filename=crackling-fireplace-nature-sound-11003.mp3'
+        };
+
+        document.querySelectorAll('.ambient-btn, .sleep-sound-btn').forEach(btn => {
+            btn.addEventListener('click', (e) => {
+                const target = e.currentTarget;
+                const type = target.getAttribute('data-sound') || target.getAttribute('data-sleep-sound');
+                if (currentAudioStream) {
+                    currentAudioStream.pause();
+                    currentAudioStream = null;
+                }
+
+                if (activeAmbientLabel && activeAmbientLabel.textContent.toLowerCase().includes(type)) {
+                    activeAmbientLabel.textContent = "Off";
+                    showToast("Ambient sound paused", "info");
+                    return;
+                }
+
+                if (ambientAudioMap[type]) {
+                    currentAudioStream = new Audio(ambientAudioMap[type]);
+                    currentAudioStream.loop = true;
+                    currentAudioStream.volume = 0.5;
+                    currentAudioStream.play().then(() => {
+                        if (activeAmbientLabel) activeAmbientLabel.textContent = `Playing: ${type.toUpperCase()}`;
+                        showToast(`Playing ambient ${type}`, "success");
+                    }).catch(() => {
+                        showToast("Failed to load ambient audio", "error");
+                    });
+                }
+            });
+        });
+
+        // Muse Sleep Space Features
+        if (toggleSleepModeBtn) {
+            toggleSleepModeBtn.addEventListener('click', async () => {
+                isSleeping = !isSleeping;
+                const mood = isSleeping ? 'Sleeping / In Bed 🌙' : 'Working 💻';
+                
+                if (isSleeping) {
+                    if (sleepModeStatusText) sleepModeStatusText.textContent = "Status: In Bed 🌙 (Wake Up)";
+                    toggleSleepModeBtn.className = "bg-purple-900/80 hover:bg-purple-800 border border-purple-600 text-purple-200 px-3.5 py-1.5 rounded-xl text-xs font-medium transition flex items-center gap-2 shrink-0";
+                    showToast("Set status to Sleeping 🌙", "success");
+                } else {
+                    if (sleepModeStatusText) sleepModeStatusText.textContent = "Set Status: Going to Bed";
+                    toggleSleepModeBtn.className = "bg-indigo-900/60 hover:bg-indigo-800/80 border border-indigo-700/60 text-indigo-200 px-3.5 py-1.5 rounded-xl text-xs font-medium transition flex items-center gap-2 shrink-0";
+                    showToast("Welcome back awake!", "info");
+                }
+
+                if (activeRoomId && currentUserId) {
+                    if (useMockBackend) {
+                        if (mockState.rooms[activeRoomId] && mockState.rooms[activeRoomId].users[currentUserId]) {
+                            mockState.rooms[activeRoomId].users[currentUserId].isSleeping = isSleeping;
+                            mockState.rooms[activeRoomId].users[currentUserId].mood = mood;
+                            triggerMockUpdate(activeRoomId);
+                        }
+                    } else {
+                        try {
+                            await updateDoc(doc(db, 'artifacts', appId, 'public', 'data', 'rooms', activeRoomId, 'users', currentUserId), {
+                                isSleeping: isSleeping,
+                                mood: mood
+                            });
+                        } catch(e){}
+                    }
+                }
+            });
+        }
+
+        document.querySelectorAll('.sleep-timer-btn').forEach(btn => {
+            btn.addEventListener('click', (e) => {
+                const mins = parseInt(e.currentTarget.getAttribute('data-minutes'), 10);
+                if (sleepTimerTimeout) clearTimeout(sleepTimerTimeout);
+                
+                if (sleepTimerLabel) sleepTimerLabel.textContent = `Timer: ${mins} mins`;
+                showToast(`Sleep timer set for ${mins} minutes`, "info");
+
+                sleepTimerTimeout = setTimeout(() => {
+                    if (currentAudioStream) {
+                        currentAudioStream.pause();
+                        currentAudioStream = null;
+                    }
+                    if (sleepTimerLabel) sleepTimerLabel.textContent = "Timer: Off";
+                    showToast("Sleep timer finished - audio paused", "info");
+                }, mins * 60 * 1000);
+            });
+        });
+
+        if (stopSleepSoundBtn) {
+            stopSleepSoundBtn.addEventListener('click', () => {
+                if (currentAudioStream) {
+                    currentAudioStream.pause();
+                    currentAudioStream = null;
+                }
+                if (sleepTimerTimeout) clearTimeout(sleepTimerTimeout);
+                if (sleepTimerLabel) sleepTimerLabel.textContent = "Timer: Off";
+                if (activeAmbientLabel) activeAmbientLabel.textContent = "Off";
+                showToast("Audio stopped", "info");
+            });
+        }
+
+        function subscribeToSleepNotes(roomId) {
+            if (useMockBackend) {
+                renderSleepNotes(mockState.rooms[roomId]?.sleepNotes || []);
+                const listener = (rId) => { if (rId === roomId) renderSleepNotes(mockState.rooms[roomId]?.sleepNotes || []); };
+                mockListeners.push(listener);
+                sleepNotesUnsub = () => { mockListeners = mockListeners.filter(l => l !== listener); };
+            } else {
+                sleepNotesUnsub = onSnapshot(collection(db, 'artifacts', appId, 'public', 'data', 'rooms', roomId, 'sleepNotes'), (snapshot) => {
+                    const notes = [];
+                    snapshot.forEach(doc => { notes.push({ id: doc.id, ...doc.data() }); });
+                    notes.sort((a, b) => (b.timestamp || 0) - (a.timestamp || 0));
+                    renderSleepNotes(notes);
+                });
+            }
+        }
+
+        function renderSleepNotes(notes) {
+            if (!sleepNotesList) return;
+            sleepNotesList.innerHTML = '';
+            if (notes.length === 0) {
+                sleepNotesList.innerHTML = `<div class="text-center py-4 text-slate-500 text-xs">No bedtime notes yet. Leave a sweet message above!</div>`;
+                return;
+            }
+            notes.forEach(note => {
+                const item = document.createElement('div');
+                item.className = "bg-slate-900 border border-slate-800 p-2.5 rounded-xl text-xs space-y-1";
+                item.innerHTML = `
+                    <div class="flex items-center justify-between text-[10px] text-indigo-400">
+                        <span class="font-medium">${escapeHTML(note.author)}</span>
+                        <span>${new Date(note.timestamp).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}</span>
+                    </div>
+                    <p class="text-slate-200">${escapeHTML(note.text)}</p>
+                `;
+                sleepNotesList.appendChild(item);
+            });
+        }
+
+        if (sendSleepNoteBtn) {
+            sendSleepNoteBtn.addEventListener('click', async () => {
+                if (!sleepNoteInput) return;
+                const text = sleepNoteInput.value.trim();
+                if (!text || !activeRoomId) return;
+                sleepNoteInput.value = '';
+
+                if (useMockBackend) {
+                    if (mockState.rooms[activeRoomId]) {
+                        if (!mockState.rooms[activeRoomId].sleepNotes) mockState.rooms[activeRoomId].sleepNotes = [];
+                        mockState.rooms[activeRoomId].sleepNotes.unshift({
+                            id: Math.random().toString(36).substring(2, 9),
+                            text: text,
+                            author: displayName,
+                            timestamp: Date.now()
+                        });
+                        triggerMockUpdate(activeRoomId);
+                        showToast("Sleep note left!", "success");
+                    }
+                } else {
+                    try {
+                        await addDoc(collection(db, 'artifacts', appId, 'public', 'data', 'rooms', activeRoomId, 'sleepNotes'), {
+                            text: text,
+                            author: displayName,
+                            timestamp: Date.now()
+                        });
+                        showToast("Sleep note left!", "success");
+                    } catch (err) {
+                        showToast("Failed to send sleep note", "error");
+                    }
+                }
+            });
+        }
+
+        // Sketch Canvas
+        let isDrawing = false;
+        let ctx = sketchCanvas ? sketchCanvas.getContext('2d') : null;
+
+        function resizeCanvas() {
+            if (!sketchCanvas || !ctx) return;
+            sketchCanvas.width = sketchCanvas.parentElement.clientWidth;
+            sketchCanvas.height = sketchCanvas.parentElement.clientHeight || 280;
+            ctx.strokeStyle = '#818cf8';
+            ctx.lineWidth = 3;
+            ctx.lineCap = 'round';
+        }
+
+        if (sketchCanvas && ctx) {
+            sketchCanvas.addEventListener('mousedown', (e) => {
+                isDrawing = true;
+                const rect = sketchCanvas.getBoundingClientRect();
+                ctx.beginPath();
+                ctx.moveTo(e.clientX - rect.left, e.clientY - rect.top);
+            });
+
+            sketchCanvas.addEventListener('mousemove', (e) => {
+                if (!isDrawing) return;
+                const rect = sketchCanvas.getBoundingClientRect();
+                ctx.lineTo(e.clientX - rect.left, e.clientY - rect.top);
+                ctx.stroke();
+            });
+
+            sketchCanvas.addEventListener('mouseup', () => { isDrawing = false; });
+            sketchCanvas.addEventListener('mouseleave', () => { isDrawing = false; });
+        }
+
+        if (clearCanvasBtn && sketchCanvas && ctx) {
+            clearCanvasBtn.addEventListener('click', () => {
+                ctx.clearRect(0, 0, sketchCanvas.width, sketchCanvas.height);
+            });
+        }
+
+        // Mood Selection
+        document.querySelectorAll('.mood-option').forEach(btn => {
+            btn.addEventListener('click', async (e) => {
+                const mood = e.currentTarget.getAttribute('data-mood');
+                if (activeRoomId && currentUserId) {
+                    if (useMockBackend) {
+                        if (mockState.rooms[activeRoomId] && mockState.rooms[activeRoomId].users[currentUserId]) {
+                            mockState.rooms[activeRoomId].users[currentUserId].mood = mood;
+                            triggerMockUpdate(activeRoomId);
+                            showToast(`Updated mood: ${mood}`, "success");
+                        }
+                    } else {
+                        try {
+                            await updateDoc(doc(db, 'artifacts', appId, 'public', 'data', 'rooms', activeRoomId, 'users', currentUserId), {
+                                mood: mood
+                            });
+                            showToast(`Updated mood: ${mood}`, "success");
+                        } catch(err){}
+                    }
+                }
+            });
+        });
+
+        // Navigation Tabs
+        function switchTab(activeTab, activeView) {
+            const tabs = [tabNotes, tabBoard, tabPhotos, tabMedia, tabSleep, tabCanvas, tabMood];
+            const views = [notesView, boardView, photosView, mediaView, sleepView, canvasView, moodView];
+
+            tabs.forEach(t => {
+                if (t) t.className = "px-3 py-1.5 rounded-lg font-medium text-slate-400 hover:text-white transition whitespace-nowrap";
+            });
+            views.forEach(v => {
+                if (v) v.classList.add('hidden');
+            });
+
+            if (activeTab) activeTab.className = "px-3 py-1.5 rounded-lg font-medium bg-indigo-600 text-white transition whitespace-nowrap";
+            if (activeView) activeView.classList.remove('hidden');
+
+            if (activeView === canvasView) {
+                setTimeout(resizeCanvas, 50);
+            }
+        }
+
+        if (tabNotes && notesView) tabNotes.addEventListener('click', () => switchTab(tabNotes, notesView));
+        if (tabBoard && boardView) tabBoard.addEventListener('click', () => switchTab(tabBoard, boardView));
+        if (tabPhotos && photosView) tabPhotos.addEventListener('click', () => switchTab(tabPhotos, photosView));
+        if (tabMedia && mediaView) tabMedia.addEventListener('click', () => switchTab(tabMedia, mediaView));
+        if (tabSleep && sleepView) tabSleep.addEventListener('click', () => switchTab(tabSleep, sleepView));
+        if (tabCanvas && canvasView) tabCanvas.addEventListener('click', () => switchTab(tabCanvas, canvasView));
+        if (tabMood && moodView) tabMood.addEventListener('click', () => switchTab(tabMood, moodView));
+
+        window.addEventListener('resize', resizeCanvas);
+        window.addEventListener('load', async () => { 
+            await initAuth(); 
+            checkUrlHashForRoom();
+        });
+    </script>
+</body>
+</html>
