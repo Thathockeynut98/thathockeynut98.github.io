@@ -1,1420 +1,963 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en" class="h-full dark">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>SyncSpace - Collaborative Room & Chat</title>
-    <script src="https://cdn.tailwindcss.com"></script>
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <style>
-        .custom-scrollbar::-webkit-scrollbar {
-            width: 6px;
-            height: 6px;
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>SyncSpace - Co-Working, Watch Together & Ambient Sound Hub</title>
+  
+  <!-- Tailwind CSS -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      darkMode: 'class',
+      theme: {
+        extend: {
+          colors: {
+            brand: {
+              50: '#f0f4ff',
+              100: '#e0e9ff',
+              400: '#818cf8',
+              500: '#6366f1',
+              600: '#4f46e5',
+              700: '#4338ca',
+              900: '#1e1b4b',
+            }
+          }
         }
-        .custom-scrollbar::-webkit-scrollbar-track {
-            background: rgba(15, 23, 42, 0.6);
-        }
-        .custom-scrollbar::-webkit-scrollbar-thumb {
-            background: rgba(71, 85, 105, 0.6);
-            border-radius: 9999px;
-        }
-        .custom-scrollbar::-webkit-scrollbar-thumb:hover {
-            background: rgba(99, 102, 241, 0.8);
-        }
-    </style>
+      }
+    }
+  </script>
+  
+  <!-- FontAwesome Icons -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700&display=swap');
+    body {
+      font-family: 'Plus Jakarta Sans', sans-serif;
+      background: radial-gradient(circle at top left, #0f172a, #0b0f19, #030712);
+    }
+    .glass-panel {
+      background: rgba(15, 23, 42, 0.75);
+      backdrop-filter: blur(16px);
+      -webkit-backdrop-filter: blur(16px);
+      border: 1px solid rgba(255, 255, 255, 0.08);
+    }
+    .glass-card {
+      background: rgba(30, 41, 59, 0.55);
+      backdrop-filter: blur(12px);
+      border: 1px solid rgba(255, 255, 255, 0.06);
+    }
+    ::-webkit-scrollbar {
+      width: 6px;
+      height: 6px;
+    }
+    ::-webkit-scrollbar-track {
+      background: rgba(15, 23, 42, 0.6);
+    }
+    ::-webkit-scrollbar-thumb {
+      background: rgba(99, 102, 241, 0.4);
+      border-radius: 9999px;
+    }
+    ::-webkit-scrollbar-thumb:hover {
+      background: rgba(99, 102, 241, 0.7);
+    }
+    .pulse-glow {
+      animation: pulseGlow 2s infinite;
+    }
+    @keyframes pulseGlow {
+      0%, 100% { box-shadow: 0 0 15px rgba(99, 102, 241, 0.3); }
+      50% { box-shadow: 0 0 25px rgba(99, 102, 241, 0.6); }
+    }
+  </style>
 </head>
-<body class="bg-slate-950 text-slate-100 font-sans min-h-screen flex flex-col justify-between overflow-x-hidden">
+<body class="h-full text-slate-100 flex flex-col overflow-hidden selection:bg-indigo-500 selection:text-white">
 
-    <!-- Toast Notification Overlay -->
-    <div id="toastContainer" class="fixed top-4 right-4 z-50 flex flex-col gap-2 pointer-events-none"></div>
-
-    <!-- App Header -->
-    <header class="bg-slate-900/80 border-b border-slate-800 px-4 py-3 flex items-center justify-between backdrop-blur-md sticky top-0 z-40">
-        <div class="flex items-center space-x-3">
-            <div class="w-9 h-9 rounded-xl bg-gradient-to-tr from-indigo-600 via-purple-600 to-pink-500 flex items-center justify-center shadow-lg shadow-indigo-500/20">
-                <i class="fa-solid fa-shapes text-white text-lg"></i>
-            </div>
-            <div>
-                <h1 class="font-bold text-base tracking-wide bg-gradient-to-r from-white via-indigo-200 to-indigo-400 bg-clip-text text-transparent">SyncSpace</h1>
-                <p id="userStatusTag" class="text-[11px] text-slate-400 font-medium">Connecting user...</p>
-            </div>
+  <!-- Application Main Shell -->
+  <div id="app" class="h-full flex flex-col relative z-10">
+    
+    <!-- Top Bar -->
+    <header class="glass-panel h-16 px-4 md:px-6 flex items-center justify-between shrink-0 border-b border-slate-800">
+      <div class="flex items-center gap-3">
+        <div class="w-10 h-10 rounded-xl bg-gradient-to-tr from-indigo-600 via-purple-600 to-pink-500 flex items-center justify-center shadow-lg shadow-indigo-500/20">
+          <i class="fa-solid fa-cubes text-xl text-white"></i>
         </div>
-
-        <!-- Room Header Controls (Hidden when in lobby) -->
-        <div id="activeRoomHeader" class="hidden flex items-center gap-2 sm:gap-4">
-            <div class="bg-slate-800/80 border border-slate-700/60 rounded-xl px-3 py-1.5 flex items-center gap-2 text-xs">
-                <span class="text-slate-400 hidden sm:inline">Room:</span>
-                <span id="activeRoomCodeDisplay" class="font-mono font-bold text-indigo-400 tracking-wider">------</span>
-                <button id="copyRoomCodeBtn" class="text-slate-400 hover:text-white transition ml-1" title="Copy Code">
-                    <i class="fa-solid fa-copy"></i>
-                </button>
-                <button id="copyShareLinkBtn" class="bg-indigo-600/30 hover:bg-indigo-600/50 text-indigo-300 px-2 py-0.5 rounded-lg text-[11px] font-medium transition ml-1 flex items-center gap-1" title="Copy Shareable Link">
-                    <i class="fa-solid fa-link"></i>
-                    <span class="hidden md:inline">Share Link</span>
-                </button>
-            </div>
-
-            <button id="heartbeatBtn" class="bg-rose-600/20 border border-rose-500/40 hover:bg-rose-600/30 text-rose-300 p-2 rounded-xl text-xs transition flex items-center gap-1.5" title="Send Heartbeat Pulse">
-                <i class="fa-solid fa-heart animate-pulse"></i>
-                <span class="hidden md:inline">Pulse</span>
-            </button>
-
-            <button id="leaveRoomBtn" class="bg-slate-800 hover:bg-slate-700 text-slate-300 p-2 sm:px-3 sm:py-1.5 rounded-xl text-xs font-medium transition flex items-center gap-1.5 border border-slate-700">
-                <i class="fa-solid fa-right-from-bracket"></i>
-                <span class="hidden sm:inline">Leave</span>
-            </button>
+        <div>
+          <h1 class="font-bold text-lg leading-tight tracking-wide text-white flex items-center gap-2">
+            SyncSpace <span class="text-[10px] bg-indigo-500/20 text-indigo-300 border border-indigo-500/30 px-2 py-0.5 rounded-full font-normal">v2.5</span>
+          </h1>
+          <p class="text-xs text-slate-400 flex items-center gap-1.5">
+            <span class="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
+            Room Code: <span id="currentRoomDisplay" class="font-mono text-indigo-300 font-semibold uppercase">MAIN-ROOM</span>
+          </p>
         </div>
+      </div>
+
+      <!-- Center View Tabs -->
+      <nav class="hidden md:flex items-center gap-1 bg-slate-900/80 p-1 rounded-xl border border-slate-800/80">
+        <button onclick="switchTab('watch')" id="tab-watch" class="nav-tab active px-4 py-1.5 rounded-lg text-sm font-medium transition-all flex items-center gap-2 bg-indigo-600 text-white shadow-sm">
+          <i class="fa-solid fa-circle-play"></i> Watch Together
+        </button>
+        <button onclick="switchTab('sketch')" id="tab-sketch" class="nav-tab px-4 py-1.5 rounded-lg text-sm font-medium transition-all flex items-center gap-2 text-slate-400 hover:text-slate-200">
+          <i class="fa-solid fa-paintbrush"></i> Canvas & Notes
+        </button>
+        <button onclick="switchTab('bedtime')" id="tab-bedtime" class="nav-tab px-4 py-1.5 rounded-lg text-sm font-medium transition-all flex items-center gap-2 text-slate-400 hover:text-slate-200">
+          <i class="fa-solid fa-moon"></i> Sleep Zone
+        </button>
+        <button onclick="switchTab('photowall')" id="tab-photowall" class="nav-tab px-4 py-1.5 rounded-lg text-sm font-medium transition-all flex items-center gap-2 text-slate-400 hover:text-slate-200">
+          <i class="fa-solid fa-images"></i> Photo Gallery
+        </button>
+      </nav>
+
+      <!-- Quick Room Actions & Controls -->
+      <div class="flex items-center gap-2 md:gap-3">
+        <button onclick="sendHeartbeat()" class="p-2.5 rounded-xl bg-pink-500/10 hover:bg-pink-500/20 text-pink-400 border border-pink-500/20 transition hover:scale-105" title="Send Heartbeat Pulse">
+          <i class="fa-solid fa-heart animate-pulse"></i>
+        </button>
+
+        <button id="voiceToggleBtn" onclick="toggleVoiceCall()" class="px-3 py-1.5 rounded-xl text-xs md:text-sm font-medium bg-slate-800 hover:bg-slate-700 text-slate-300 border border-slate-700 transition flex items-center gap-2">
+          <i id="voiceIcon" class="fa-solid fa-microphone-slash text-rose-400"></i>
+          <span id="voiceStatusText" class="hidden sm:inline">Voice Call</span>
+        </button>
+
+        <button onclick="copyShareLink()" class="px-3.5 py-1.5 rounded-xl text-xs md:text-sm font-medium bg-indigo-600 hover:bg-indigo-500 text-white shadow-md shadow-indigo-600/30 transition flex items-center gap-2">
+          <i class="fa-solid fa-share-nodes"></i>
+          <span class="hidden sm:inline">Share Link</span>
+        </button>
+
+        <button onclick="openRoomModal()" class="p-2 rounded-xl text-slate-400 hover:text-white hover:bg-slate-800 transition" title="Room Options">
+          <i class="fa-solid fa-right-to-bracket text-lg"></i>
+        </button>
+      </div>
     </header>
 
-    <!-- Main Container -->
-    <main class="flex-1 flex flex-col p-3 sm:p-5 max-w-7xl w-full mx-auto">
-        
-        <!-- LOBBY SCREEN -->
-        <div id="lobbyScreen" class="flex-1 flex flex-col items-center justify-center py-8">
-            <div class="max-w-md w-full bg-slate-900/90 border border-slate-800 rounded-2xl p-6 sm:p-8 shadow-2xl backdrop-blur-md space-y-6">
-                <div class="text-center space-y-2">
-                    <h2 class="text-2xl font-bold text-white">Join or Create Room</h2>
-                    <p class="text-xs text-slate-400">Collaborate with real-time docs, snapshots, ambient audio, and live sketchpad.</p>
-                </div>
+    <!-- Main Workspace Frame -->
+    <div class="flex-1 flex overflow-hidden">
 
-                <div class="space-y-4">
-                    <div>
-                        <label class="block text-xs font-semibold text-slate-300 mb-1.5">Your Display Name</label>
-                        <div class="relative">
-                            <i class="fa-solid fa-user absolute left-3.5 top-3 text-slate-500 text-xs"></i>
-                            <input type="text" id="usernameInput" placeholder="Enter name..." 
-                                class="w-full bg-slate-950 border border-slate-800 rounded-xl pl-9 pr-4 py-2.5 text-sm text-slate-100 placeholder-slate-600 focus:outline-none focus:border-indigo-500 transition">
-                        </div>
-                    </div>
-
-                    <div class="pt-2 border-t border-slate-800/80 space-y-3">
-                        <button id="createRoomBtn" class="w-full bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-500 hover:to-purple-500 text-white font-medium py-2.5 rounded-xl text-sm transition shadow-lg shadow-indigo-600/25 flex items-center justify-center gap-2">
-                            <i class="fa-solid fa-plus"></i> Create New Room
-                        </button>
-
-                        <div class="flex items-center my-3">
-                            <div class="flex-1 border-t border-slate-800"></div>
-                            <span class="px-3 text-[11px] text-slate-500 uppercase tracking-wider font-semibold">Or</span>
-                            <div class="flex-1 border-t border-slate-800"></div>
-                        </div>
-
-                        <div class="flex gap-2">
-                            <input type="text" id="joinRoomInput" placeholder="Enter Room Code" uppercase
-                                class="flex-1 bg-slate-950 border border-slate-800 rounded-xl px-3.5 py-2 text-sm text-slate-100 font-mono placeholder-slate-600 uppercase tracking-wider focus:outline-none focus:border-indigo-500 transition">
-                            <button id="joinRoomBtn" class="bg-slate-800 hover:bg-slate-700 text-white font-medium px-4 py-2 rounded-xl text-sm border border-slate-700 transition">
-                                Join
-                            </button>
-                        </div>
-                    </div>
-                </div>
-            </div>
+      <!-- Left Sidebar: Web Audio Sound Engine -->
+      <aside class="w-80 glass-panel shrink-0 border-r border-slate-800/80 flex flex-col hidden lg:flex">
+        <div class="p-4 border-b border-slate-800 flex items-center justify-between">
+          <h2 class="font-semibold text-slate-200 flex items-center gap-2 text-sm uppercase tracking-wider">
+            <i class="fa-solid fa-sliders text-indigo-400"></i> Ambient Soundscapes
+          </h2>
+          <button id="masterMuteBtn" onclick="toggleMasterMute()" class="p-1.5 rounded-lg text-slate-400 hover:text-white hover:bg-slate-800 transition text-xs" title="Mute/Unmute All">
+            <i id="masterMuteIcon" class="fa-solid fa-volume-high"></i>
+          </button>
         </div>
 
-        <!-- ROOM WORKSPACE SCREEN -->
-        <div id="roomWorkspace" class="hidden flex-1 grid grid-cols-1 lg:grid-cols-3 gap-4 h-[calc(100vh-100px)] min-h-[550px]">
+        <div class="flex-1 overflow-y-auto p-4 space-y-4">
+          <!-- Sleep Timer -->
+          <div class="bg-slate-900/80 p-3 rounded-xl border border-slate-800 flex flex-col gap-2">
+            <div class="flex items-center justify-between text-xs">
+              <span class="text-slate-400 flex items-center gap-1.5">
+                <i class="fa-solid fa-hourglass-half text-indigo-400"></i> Sleep Fade Timer
+              </span>
+              <span id="timerDisplay" class="font-mono text-indigo-300 font-semibold">Off</span>
+            </div>
+            <div class="grid grid-cols-4 gap-1.5">
+              <button onclick="setSoundTimer(15)" class="py-1 px-2 rounded bg-slate-800 hover:bg-indigo-600/30 text-[11px] text-slate-300 transition">15m</button>
+              <button onclick="setSoundTimer(30)" class="py-1 px-2 rounded bg-slate-800 hover:bg-indigo-600/30 text-[11px] text-slate-300 transition">30m</button>
+              <button onclick="setSoundTimer(60)" class="py-1 px-2 rounded bg-slate-800 hover:bg-indigo-600/30 text-[11px] text-slate-300 transition">60m</button>
+              <button onclick="setSoundTimer(0)" class="py-1 px-2 rounded bg-slate-800 hover:bg-rose-600/30 text-[11px] text-slate-300 transition">Off</button>
+            </div>
+          </div>
+
+          <!-- Ambient Tracks List -->
+          <div id="ambientSoundGrid" class="space-y-3">
+            <!-- Dynamically Rendered Track Controls -->
+          </div>
+        </div>
+
+        <!-- Room Vibe & Mood Sync -->
+        <div class="p-4 border-t border-slate-800 bg-slate-950/40">
+          <label class="text-xs font-semibold text-slate-400 uppercase tracking-wider mb-2 block">Set Room Status / Mood</label>
+          <div class="flex items-center gap-2">
+            <input type="text" id="userMoodInput" placeholder="Study time, chillin'..." class="bg-slate-900 border border-slate-800 text-xs text-slate-200 px-3 py-2 rounded-xl flex-1 focus:outline-none focus:border-indigo-500">
+            <button onclick="updateMoodStatus()" class="p-2 bg-indigo-600 hover:bg-indigo-500 text-white rounded-xl text-xs transition">
+              <i class="fa-solid fa-check"></i>
+            </button>
+          </div>
+        </div>
+      </aside>
+
+      <!-- Center Dynamic Viewport -->
+      <main class="flex-1 bg-slate-950/20 relative overflow-hidden flex flex-col">
+
+        <!-- Mobile Navigation Switcher -->
+        <div class="flex md:hidden items-center justify-around bg-slate-900 border-b border-slate-800 p-2 shrink-0 text-xs">
+          <button onclick="switchTab('watch')" id="mob-tab-watch" class="px-3 py-1.5 rounded-lg font-medium bg-indigo-600 text-white">Watch</button>
+          <button onclick="switchTab('sketch')" id="mob-tab-sketch" class="px-3 py-1.5 rounded-lg font-medium text-slate-400">Sketchpad</button>
+          <button onclick="switchTab('bedtime')" id="mob-tab-bedtime" class="px-3 py-1.5 rounded-lg font-medium text-slate-400">Sleep</button>
+          <button onclick="switchTab('photowall')" id="mob-tab-photowall" class="px-3 py-1.5 rounded-lg font-medium text-slate-400">Photos</button>
+        </div>
+
+        <!-- View 1: Universal Watch Together (YouTube + Native HTML5 Video) -->
+        <div id="view-watch" class="view-panel flex-1 flex flex-col p-4 md:p-6 overflow-y-auto space-y-4">
+          <!-- Universal Video Input -->
+          <div class="glass-card p-4 rounded-2xl border border-slate-800 flex flex-col lg:flex-row gap-3 items-center justify-between">
+            <div class="w-full lg:w-auto flex-1 flex flex-col sm:flex-row gap-2">
+              <div class="relative flex-1">
+                <i class="fa-solid fa-link absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400"></i>
+                <input type="text" id="videoUrlInput" placeholder="Paste YouTube link OR direct video URL (.mp4, .webm, .m3u8)" class="w-full bg-slate-900 border border-slate-800 text-slate-200 text-sm pl-10 pr-4 py-2.5 rounded-xl focus:outline-none focus:border-indigo-500">
+              </div>
+              <button onclick="loadUniversalVideo()" class="px-4 py-2.5 bg-indigo-600 hover:bg-indigo-500 text-white rounded-xl text-sm font-medium transition shrink-0 flex items-center justify-center gap-2">
+                <i class="fa-solid fa-satellite-dish"></i> Sync Stream
+              </button>
+            </div>
+
+            <!-- Quick Sync Presets -->
+            <div class="w-full lg:w-auto flex items-center gap-1.5 overflow-x-auto pb-1 lg:pb-0 text-xs">
+              <span class="text-slate-400 font-medium shrink-0">Presets:</span>
+              <button onclick="loadPreset('youtube', 'jfKfPfyJRdk')" class="px-2.5 py-1 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 transition shrink-0"><i class="fa-brands fa-youtube text-red-400"></i> Lofi Girl</button>
+              <button onclick="loadPreset('youtube', 'TURbeWK2wwg')" class="px-2.5 py-1 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 transition shrink-0"><i class="fa-brands fa-youtube text-red-400"></i> Rain Stream</button>
+              <button onclick="loadPreset('mp4', 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4')" class="px-2.5 py-1 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 transition shrink-0"><i class="fa-solid fa-file-video text-indigo-400"></i> MP4 Demo</button>
+            </div>
+          </div>
+
+          <!-- Player Viewing Box -->
+          <div class="flex-1 min-h-[300px] md:min-h-[440px] bg-black rounded-2xl overflow-hidden shadow-2xl relative border border-slate-800/80 flex items-center justify-center">
             
-            <!-- Left Side: Interactive Collaboration Workspace (2 cols on LG) -->
-            <div class="lg:col-span-2 bg-slate-900/80 border border-slate-800 rounded-2xl flex flex-col overflow-hidden shadow-xl backdrop-blur-md">
-                
-                <!-- Room Workspace View Header Tabs -->
-                <div class="p-3 border-b border-slate-800/80 flex items-center justify-between gap-2 bg-slate-950/40">
-                    <div class="flex bg-slate-950 p-1 rounded-xl border border-slate-800/80 text-xs overflow-x-auto custom-scrollbar w-full">
-                        <button id="tabNotes" class="px-3 py-1.5 rounded-lg font-medium bg-indigo-600 text-white transition whitespace-nowrap">Shared Doc</button>
-                        <button id="tabBoard" class="px-3 py-1.5 rounded-lg font-medium text-slate-400 hover:text-white transition whitespace-nowrap">Quick Cards</button>
-                        <button id="tabPhotos" class="px-3 py-1.5 rounded-lg font-medium text-slate-400 hover:text-white transition whitespace-nowrap">Photo Wall</button>
-                        <button id="tabMedia" class="px-3 py-1.5 rounded-lg font-medium text-slate-400 hover:text-white transition whitespace-nowrap">Watch & Ambient</button>
-                        <button id="tabSleep" class="px-3 py-1.5 rounded-lg font-medium text-slate-400 hover:text-white transition whitespace-nowrap"><i class="fa-solid fa-moon text-indigo-400 mr-1"></i> Sleep Space</button>
-                        <button id="tabCanvas" class="px-3 py-1.5 rounded-lg font-medium text-slate-400 hover:text-white transition whitespace-nowrap">Sketch Canvas</button>
-                        <button id="tabMood" class="px-3 py-1.5 rounded-lg font-medium text-slate-400 hover:text-white transition whitespace-nowrap">Mood & Distance</button>
-                    </div>
-                </div>
-
-                <!-- Collaborative Content Views Container -->
-                <div class="flex-1 p-4 overflow-y-auto custom-scrollbar flex flex-col relative bg-slate-900/30">
-                    
-                    <!-- View 1: Real-time Synchronized Document -->
-                    <div id="notesView" class="flex-1 flex flex-col space-y-2">
-                        <div class="flex items-center justify-between text-xs text-slate-400">
-                            <span><i class="fa-solid fa-file-lines mr-1 text-indigo-400"></i> Synchronized Document</span>
-                            <span class="text-slate-500">Auto-saved to room</span>
-                        </div>
-                        <textarea id="sharedDoc" placeholder="Type notes, ideas, or shared goals here in real-time..."
-                            class="flex-1 w-full bg-slate-950/90 border border-slate-800 rounded-xl p-3.5 text-sm text-slate-200 placeholder-slate-600 focus:outline-none focus:border-indigo-500/80 resize-none font-mono leading-relaxed custom-scrollbar min-h-[300px]"></textarea>
-                    </div>
-
-                    <!-- View 2: Quick Collaborative Scratchpad / Cards -->
-                    <div id="boardView" class="hidden flex-1 flex flex-col space-y-3">
-                        <div class="flex items-center justify-between text-xs text-slate-400">
-                            <span><i class="fa-solid fa-sticky-note mr-1 text-amber-400"></i> Shared Quick Cards</span>
-                            <span class="text-slate-500">Key takeaways or quick ideas</span>
-                        </div>
-                        <div id="notesList" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 overflow-y-auto max-h-[calc(100vh-250px)] p-1 custom-scrollbar flex-1">
-                            <!-- Cards inserted dynamically -->
-                        </div>
-                        <div class="flex gap-2 pt-2 border-t border-slate-800/80">
-                            <input type="text" id="newNoteInput" placeholder="Add a quick shared note card..." 
-                                class="flex-1 bg-slate-950 border border-slate-800 rounded-xl px-3.5 py-2 text-xs text-slate-200 focus:outline-none focus:border-indigo-500">
-                            <button id="addNoteBtn" class="bg-amber-600 hover:bg-amber-500 text-white font-medium px-4 py-2 rounded-xl text-xs transition shrink-0">
-                                Add Note
-                            </button>
-                        </div>
-                    </div>
-
-                    <!-- View 3: Photo Wall & Gallery -->
-                    <div id="photosView" class="hidden flex-1 flex flex-col space-y-3">
-                        <div class="flex items-center justify-between text-xs text-slate-400">
-                            <span><i class="fa-solid fa-camera-retro mr-1 text-rose-400"></i> Shared Photo Wall</span>
-                            <span class="text-slate-500">Paste image links to create a collage</span>
-                        </div>
-                        <div id="photosGrid" class="grid grid-cols-2 sm:grid-cols-3 gap-3 overflow-y-auto max-h-[calc(100vh-270px)] p-1 custom-scrollbar flex-1">
-                            <!-- Photo cards inserted dynamically -->
-                        </div>
-                        <div class="flex flex-col sm:flex-row gap-2 pt-2 bg-slate-950 p-2.5 rounded-xl border border-slate-800">
-                            <input type="url" id="photoUrlInput" placeholder="Paste image URL (https://...)" 
-                                class="flex-1 bg-slate-900 border border-slate-800 rounded-xl px-3 py-1.5 text-xs text-slate-200 focus:outline-none focus:border-indigo-500">
-                            <input type="text" id="photoCaptionInput" placeholder="Caption..." 
-                                class="w-full sm:w-32 bg-slate-900 border border-slate-800 rounded-xl px-3 py-1.5 text-xs text-slate-200 focus:outline-none focus:border-indigo-500">
-                            <button id="addPhotoBtn" class="bg-rose-600 hover:bg-rose-500 text-white font-medium px-4 py-1.5 rounded-xl text-xs transition shrink-0">
-                                Post Photo
-                            </button>
-                        </div>
-                    </div>
-
-                    <!-- View 4: Watch Together & Ambient Audio Streams -->
-                    <div id="mediaView" class="hidden flex-1 flex flex-col space-y-4">
-                        <div class="bg-slate-950/80 border border-slate-800 p-3.5 rounded-xl space-y-2.5">
-                            <h3 class="text-xs font-semibold text-slate-200 flex items-center justify-between">
-                                <span class="flex items-center gap-2"><i class="fa-solid fa-headphones text-indigo-400"></i> Ambient Soundscapes</span>
-                                <span id="activeAmbientLabel" class="text-[11px] text-indigo-400 font-normal">Off</span>
-                            </h3>
-                            <div class="grid grid-cols-2 sm:grid-cols-4 gap-2">
-                                <button data-sound="lofi" class="ambient-btn p-2.5 bg-slate-900 hover:bg-slate-800 border border-slate-800 rounded-xl text-xs font-medium text-left transition flex items-center gap-2 text-slate-300">
-                                    <i class="fa-solid fa-music text-indigo-400"></i> Lo-Fi Beats
-                                </button>
-                                <button data-sound="rain" class="ambient-btn p-2.5 bg-slate-900 hover:bg-slate-800 border border-slate-800 rounded-xl text-xs font-medium text-left transition flex items-center gap-2 text-slate-300">
-                                    <i class="fa-solid fa-cloud-showers-heavy text-blue-400"></i> Rainy Cafe
-                                </button>
-                                <button data-sound="fire" class="ambient-btn p-2.5 bg-slate-900 hover:bg-slate-800 border border-slate-800 rounded-xl text-xs font-medium text-left transition flex items-center gap-2 text-slate-300">
-                                    <i class="fa-solid fa-fire text-amber-500"></i> Fireplace
-                                </button>
-                                <button data-sound="waves" class="ambient-btn p-2.5 bg-slate-900 hover:bg-slate-800 border border-slate-800 rounded-xl text-xs font-medium text-left transition flex items-center gap-2 text-slate-300">
-                                    <i class="fa-solid fa-water text-cyan-400"></i> Ocean Waves
-                                </button>
-                            </div>
-                        </div>
-
-                        <div class="bg-slate-950/80 border border-slate-800 p-3.5 rounded-xl space-y-3 flex-1 flex flex-col">
-                            <div class="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2">
-                                <h3 class="text-xs font-semibold text-slate-200 flex items-center gap-2">
-                                    <i class="fa-brands fa-youtube text-red-500"></i> Watch Together Sync
-                                </h3>
-                                <div class="flex items-center gap-2 w-full sm:w-auto">
-                                    <input type="text" id="youtubeUrlInput" placeholder="Paste YouTube Link or Video ID" 
-                                        class="flex-1 sm:w-60 bg-slate-900 border border-slate-800 rounded-lg px-3 py-1.5 text-xs text-slate-200 focus:outline-none focus:border-indigo-500">
-                                    <button id="loadVideoBtn" class="bg-red-600 hover:bg-red-500 text-white font-medium px-3 py-1.5 rounded-lg text-xs transition shrink-0">
-                                        Sync Video
-                                    </button>
-                                </div>
-                            </div>
-
-                            <div class="flex-1 min-h-[220px] bg-black rounded-xl overflow-hidden border border-slate-800 relative">
-                                <iframe id="ytPlayer" class="w-full h-full min-h-[220px]" src="https://www.youtube-nocookie.com/embed/jfKfPfyJRdk?enablejsapi=1" 
-                                    title="Synchronized Video Player" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe>
-                            </div>
-                        </div>
-                    </div>
-
-                    <!-- View 5: Muse-Style Sleep Space & Bedtime Zone -->
-                    <div id="sleepView" class="hidden flex-1 flex flex-col space-y-4">
-                        <div class="bg-gradient-to-r from-indigo-950/80 via-slate-900 to-purple-950/80 border border-indigo-900/50 p-4 rounded-2xl space-y-4 shadow-xl relative overflow-hidden">
-                            <div class="absolute -top-10 -right-10 w-32 h-32 bg-indigo-500/10 rounded-full blur-2xl pointer-events-none"></div>
-                            
-                            <div class="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 border-b border-indigo-900/40 pb-3">
-                                <div>
-                                    <h3 class="text-sm font-semibold text-indigo-200 flex items-center gap-2">
-                                        <i class="fa-solid fa-moon text-indigo-400"></i> Bedtime & Rest Sync
-                                    </h3>
-                                    <p class="text-[11px] text-slate-400">Wind down together, track bedtime status, and share night thoughts.</p>
-                                </div>
-
-                                <button id="toggleSleepModeBtn" class="bg-indigo-900/60 hover:bg-indigo-800/80 border border-indigo-700/60 text-indigo-200 px-3.5 py-1.5 rounded-xl text-xs font-medium transition flex items-center gap-2 shrink-0">
-                                    <i class="fa-solid fa-bed text-indigo-400"></i>
-                                    <span id="sleepModeStatusText">Set Status: Going to Bed</span>
-                                </button>
-                            </div>
-
-                            <!-- Sleep Sounds & Digital Wind-Down -->
-                            <div class="space-y-2">
-                                <div class="flex items-center justify-between">
-                                    <span class="text-xs font-semibold text-slate-300 flex items-center gap-1.5">
-                                        <i class="fa-solid fa-cloud-moon text-purple-400"></i> Night Relaxation Sounds
-                                    </span>
-                                    <span id="sleepTimerLabel" class="text-[11px] text-slate-400">Timer: Off</span>
-                                </div>
-
-                                <div class="grid grid-cols-2 sm:grid-cols-4 gap-2">
-                                    <button data-sleep-sound="rain" class="sleep-sound-btn p-2.5 bg-slate-950/80 hover:bg-slate-900 border border-slate-800 rounded-xl text-xs text-left transition flex flex-col gap-1">
-                                        <span class="font-medium text-slate-200 flex items-center gap-1.5"><i class="fa-solid fa-cloud-rain text-blue-400"></i> Rain Shower</span>
-                                        <span class="text-[10px] text-slate-500">Soft lullaby rain</span>
-                                    </button>
-                                    <button data-sleep-sound="space" class="sleep-sound-btn p-2.5 bg-slate-950/80 hover:bg-slate-900 border border-slate-800 rounded-xl text-xs text-left transition flex flex-col gap-1">
-                                        <span class="font-medium text-slate-200 flex items-center gap-1.5"><i class="fa-solid fa-star text-amber-300"></i> Deep Space</span>
-                                        <span class="text-[10px] text-slate-500">Calm ambient tone</span>
-                                    </button>
-                                    <button data-sleep-sound="fire" class="sleep-sound-btn p-2.5 bg-slate-950/80 hover:bg-slate-900 border border-slate-800 rounded-xl text-xs text-left transition flex flex-col gap-1">
-                                        <span class="font-medium text-slate-200 flex items-center gap-1.5"><i class="fa-solid fa-fire text-amber-500"></i> Hearth Fire</span>
-                                        <span class="text-[10px] text-slate-500">Warm wood crackle</span>
-                                    </button>
-                                    <button data-sleep-sound="waves" class="sleep-sound-btn p-2.5 bg-slate-950/80 hover:bg-slate-900 border border-slate-800 rounded-xl text-xs text-left transition flex flex-col gap-1">
-                                        <span class="font-medium text-slate-200 flex items-center gap-1.5"><i class="fa-solid fa-water text-cyan-400"></i> Night Tide</span>
-                                        <span class="text-[10px] text-slate-500">Gentle ocean wave</span>
-                                    </button>
-                                </div>
-
-                                <div class="flex items-center gap-3 pt-2">
-                                    <span class="text-[11px] text-slate-400">Sleep Timer:</span>
-                                    <button class="sleep-timer-btn px-2.5 py-1 bg-slate-950 border border-slate-800 rounded-lg text-[11px] text-slate-300 hover:text-white" data-minutes="15">15m</button>
-                                    <button class="sleep-timer-btn px-2.5 py-1 bg-slate-950 border border-slate-800 rounded-lg text-[11px] text-slate-300 hover:text-white" data-minutes="30">30m</button>
-                                    <button class="sleep-timer-btn px-2.5 py-1 bg-slate-950 border border-slate-800 rounded-lg text-[11px] text-slate-300 hover:text-white" data-minutes="60">60m</button>
-                                    <button id="stopSleepSoundBtn" class="ml-auto text-[11px] text-rose-400 hover:text-rose-300">Stop Audio</button>
-                                </div>
-                            </div>
-                        </div>
-
-                        <!-- Goodnight / Morning Notes -->
-                        <div class="bg-slate-950 border border-slate-800 rounded-xl p-4 space-y-3">
-                            <h3 class="text-xs font-semibold text-indigo-300 flex items-center gap-1.5">
-                                <i class="fa-solid fa-envelope-open-text"></i> Goodnight & Morning Notes
-                            </h3>
-                            <div class="flex gap-2">
-                                <input type="text" id="sleepNoteInput" placeholder="Leave a sweet goodnight message or morning note..." 
-                                    class="flex-1 bg-slate-900 border border-slate-800 rounded-xl px-3.5 py-2 text-xs text-slate-200 focus:outline-none focus:border-indigo-500">
-                                <button id="sendSleepNoteBtn" class="bg-indigo-600 hover:bg-indigo-500 text-white font-medium px-4 py-2 rounded-xl text-xs transition shrink-0">
-                                    Send Note
-                                </button>
-                            </div>
-                            <div id="sleepNotesList" class="space-y-2 max-h-48 overflow-y-auto custom-scrollbar pt-1">
-                                <!-- Sleep notes populated dynamically -->
-                            </div>
-                        </div>
-                    </div>
-
-                    <!-- View 6: Collaborative Sketch Canvas -->
-                    <div id="canvasView" class="hidden flex-1 flex flex-col space-y-2">
-                        <div class="flex items-center justify-between text-xs text-slate-400">
-                            <span><i class="fa-solid fa-pen-ruler mr-1 text-indigo-400"></i> Interactive Sketchpad</span>
-                            <button id="clearCanvasBtn" class="bg-slate-800 hover:bg-slate-700 text-slate-300 px-2.5 py-1 rounded-lg text-xs transition border border-slate-700">
-                                Clear Canvas
-                            </button>
-                        </div>
-                        <div class="flex-1 min-h-[280px] bg-slate-950 rounded-xl overflow-hidden border border-slate-800 relative">
-                            <canvas id="sketchCanvas" class="w-full h-full cursor-crosshair touch-none"></canvas>
-                        </div>
-                    </div>
-
-                    <!-- View 7: Mood & Distance Tracker -->
-                    <div id="moodView" class="hidden flex-1 flex flex-col space-y-4">
-                        <div class="bg-slate-950 border border-slate-800 p-4 rounded-xl space-y-3">
-                            <h3 class="text-xs font-semibold text-slate-300 flex items-center gap-2">
-                                <i class="fa-solid fa-face-smile text-amber-400"></i> How are you feeling right now?
-                            </h3>
-                            <div class="grid grid-cols-2 sm:grid-cols-4 gap-2 text-xs">
-                                <button data-mood="Working 💻" class="mood-option p-2 bg-slate-900 hover:bg-slate-800 border border-slate-800 rounded-xl text-left transition text-slate-200">
-                                    💻 Working
-                                </button>
-                                <button data-mood="Missing You ❤️" class="mood-option p-2 bg-slate-900 hover:bg-slate-800 border border-slate-800 rounded-xl text-left transition text-slate-200">
-                                    ❤️ Missing You
-                                </button>
-                                <button data-mood="Chilling ☕" class="mood-option p-2 bg-slate-900 hover:bg-slate-800 border border-slate-800 rounded-xl text-left transition text-slate-200">
-                                    ☕ Chilling
-                                </button>
-                                <button data-mood="Sleepy 🌙" class="mood-option p-2 bg-slate-900 hover:bg-slate-800 border border-slate-800 rounded-xl text-left transition text-slate-200">
-                                    🌙 Sleepy
-                                </button>
-                            </div>
-                        </div>
-
-                        <div class="bg-slate-950 border border-slate-800 p-4 rounded-xl space-y-3 flex-1">
-                            <h3 class="text-xs font-semibold text-slate-300 flex items-center gap-2">
-                                <i class="fa-solid fa-users text-indigo-400"></i> Room Members & Current Status
-                            </h3>
-                            <div id="membersMoodList" class="space-y-2 text-xs">
-                                <!-- Member moods rendered dynamically -->
-                            </div>
-                        </div>
-                    </div>
-
-                </div>
+            <!-- YouTube Embed Container -->
+            <div id="youtubePlayerContainer" class="w-full h-full">
+              <div id="youtubePlayer" class="w-full h-full"></div>
             </div>
 
-            <!-- Right Side: Real-Time Chat & Room Members Bar (1 col on LG) -->
-            <div class="bg-slate-900/80 border border-slate-800 rounded-2xl flex flex-col overflow-hidden shadow-xl backdrop-blur-md h-full">
-                <!-- Room Presence Header -->
-                <div class="p-3 border-b border-slate-800/80 flex items-center justify-between bg-slate-950/40">
-                    <div class="flex items-center gap-2">
-                        <i class="fa-solid fa-users text-indigo-400 text-xs"></i>
-                        <span class="text-xs font-semibold text-slate-200">Active Presence</span>
-                    </div>
-                    <span id="userCountBadge" class="bg-indigo-600/20 text-indigo-300 text-[11px] font-medium px-2 py-0.5 rounded-full border border-indigo-500/30">
-                        1 Online
-                    </span>
-                </div>
-
-                <!-- Active Users Pill Badges -->
-                <div id="activeUsersList" class="px-3 py-2 border-b border-slate-800/60 flex flex-wrap gap-1.5 bg-slate-950/20 max-h-24 overflow-y-auto custom-scrollbar">
-                    <!-- Users inserted dynamically -->
-                </div>
-
-                <!-- Live Chat Feed -->
-                <div class="flex-1 p-3 overflow-y-auto custom-scrollbar flex flex-col space-y-3" id="chatMessages">
-                    <div class="text-center text-[11px] text-slate-500 my-auto py-4">
-                        Messages sent here will sync live with everyone in the room.
-                    </div>
-                </div>
-
-                <!-- Live Chat Input Box -->
-                <form id="chatForm" class="p-3 border-t border-slate-800/80 bg-slate-950/60 flex gap-2">
-                    <input type="text" id="chatInput" placeholder="Type message..." autocomplete="off"
-                        class="flex-1 bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-xs text-slate-100 placeholder-slate-600 focus:outline-none focus:border-indigo-500 transition">
-                    <button type="submit" class="bg-indigo-600 hover:bg-indigo-500 text-white font-medium px-3.5 py-2 rounded-xl text-xs transition shrink-0 flex items-center justify-center">
-                        <i class="fa-solid fa-paper-plane"></i>
-                    </button>
-                </form>
+            <!-- Native HTML5 Video Player Container -->
+            <div id="html5PlayerContainer" class="w-full h-full hidden bg-black flex flex-col items-center justify-center relative">
+              <video id="nativeVideoPlayer" class="w-full h-full object-contain" controls>
+                <source id="nativeVideoSource" src="" type="video/mp4">
+                Your browser does not support HTML5 video streaming.
+              </video>
             </div>
 
+          </div>
         </div>
-    </main>
 
-    <!-- Firebase SDK Imports -->
-    <script type="module">
-        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
-        import { getAuth, signInAnonymously } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
-        import { getFirestore, doc, setDoc, getDoc, updateDoc, onSnapshot, collection, addDoc, deleteDoc } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+        <!-- View 2: Collaborative Canvas / Sketchpad -->
+        <div id="view-sketch" class="view-panel flex-1 hidden p-4 md:p-6 flex flex-col h-full overflow-hidden">
+          <div class="glass-card p-3 rounded-2xl border border-slate-800 mb-3 flex flex-wrap items-center justify-between gap-3">
+            <div class="flex items-center gap-2">
+              <label class="text-xs text-slate-400 font-medium">Tool:</label>
+              <button onclick="setCanvasTool('pen')" id="tool-pen" class="p-2 bg-indigo-600 text-white rounded-lg text-xs transition"><i class="fa-solid fa-pen"></i> Pen</button>
+              <button onclick="setCanvasTool('eraser')" id="tool-eraser" class="p-2 bg-slate-800 text-slate-300 hover:bg-slate-700 rounded-lg text-xs transition"><i class="fa-solid fa-eraser"></i> Eraser</button>
+              
+              <div class="h-4 w-px bg-slate-700 mx-1"></div>
+              
+              <label class="text-xs text-slate-400 font-medium">Color:</label>
+              <input type="color" id="canvasColorPicker" value="#6366f1" class="w-7 h-7 rounded bg-transparent cursor-pointer border-0">
+              
+              <div class="h-4 w-px bg-slate-700 mx-1"></div>
+              
+              <label class="text-xs text-slate-400 font-medium">Size:</label>
+              <input type="range" id="canvasLineWidth" min="1" max="30" value="4" class="w-20 accent-indigo-500">
+            </div>
 
-        // Global state and fallback system for robust operation
-        let useMockBackend = false;
-        let mockState = {
-            rooms: {}
-        };
-        let mockListeners = [];
+            <div class="flex items-center gap-2">
+              <button onclick="clearCanvas()" class="px-3 py-1.5 bg-rose-500/20 text-rose-300 hover:bg-rose-500/30 rounded-xl text-xs font-medium border border-rose-500/30 transition flex items-center gap-1.5">
+                <i class="fa-solid fa-trash"></i> Clear Canvas
+              </button>
+            </div>
+          </div>
 
-        // App State
-        let currentUserId = 'user_' + Math.random().toString(36).substring(2, 8);
-        let displayName = '';
-        let activeRoomId = null;
-        let isSelfTyping = false;
-        let isSleeping = false;
-        let sleepTimerTimeout = null;
+          <div class="flex-1 bg-slate-900/90 rounded-2xl border border-slate-800 relative overflow-hidden flex items-center justify-center">
+            <canvas id="sketchCanvas" class="w-full h-full cursor-crosshair block"></canvas>
+          </div>
+        </div>
 
-        // Listener references
-        let roomUnsub = null;
-        let usersUnsub = null;
-        let chatUnsub = null;
-        let notesUnsub = null;
-        let photosUnsub = null;
-        let sleepNotesUnsub = null;
+        <!-- View 3: Sleep Zone & Mindfulness Bedtime -->
+        <div id="view-bedtime" class="view-panel flex-1 hidden p-4 md:p-6 overflow-y-auto space-y-6">
+          <div class="glass-card p-6 rounded-2xl border border-slate-800 text-center max-w-xl mx-auto space-y-5 my-auto">
+            <div class="w-16 h-16 rounded-2xl bg-indigo-500/10 border border-indigo-500/20 text-indigo-400 flex items-center justify-center text-3xl mx-auto">
+              <i class="fa-solid fa-moon"></i>
+            </div>
+            <div>
+              <h2 class="text-xl font-bold text-slate-100">Bedtime & Relaxation Space</h2>
+              <p class="text-sm text-slate-400 mt-1">Wind down together. Trigger sleep frequency soundscapes or send a goodnight note to room members.</p>
+            </div>
 
-        // UI Element References
-        const lobbyScreen = document.getElementById('lobbyScreen');
-        const roomWorkspace = document.getElementById('roomWorkspace');
-        const activeRoomHeader = document.getElementById('activeRoomHeader');
-        const activeRoomCodeDisplay = document.getElementById('activeRoomCodeDisplay');
-        const usernameInput = document.getElementById('usernameInput');
-        const createRoomBtn = document.getElementById('createRoomBtn');
-        const joinRoomInput = document.getElementById('joinRoomInput');
-        const joinRoomBtn = document.getElementById('joinRoomBtn');
-        const leaveRoomBtn = document.getElementById('leaveRoomBtn');
-        const copyRoomCodeBtn = document.getElementById('copyRoomCodeBtn');
-        const copyShareLinkBtn = document.getElementById('copyShareLinkBtn');
-        const heartbeatBtn = document.getElementById('heartbeatBtn');
-        const userStatusTag = document.getElementById('userStatusTag');
+            <!-- Goodnight Note Creator -->
+            <div class="bg-slate-900/80 p-4 rounded-xl border border-slate-800 text-left space-y-3">
+              <label class="text-xs font-semibold text-slate-300 uppercase block">Send Goodnight / Morning Note</label>
+              <textarea id="bedtimeNoteInput" rows="2" placeholder="Sweet dreams! See you tomorrow at 9 AM..." class="w-full bg-slate-950 border border-slate-800 text-xs text-slate-200 p-3 rounded-xl focus:outline-none focus:border-indigo-500"></textarea>
+              <button onclick="sendBedtimeNote()" class="w-full py-2 bg-indigo-600 hover:bg-indigo-500 text-white rounded-xl text-xs font-medium transition flex items-center justify-center gap-2">
+                <i class="fa-solid fa-paper-plane"></i> Post Note
+              </button>
+            </div>
 
-        // Workspace Navigation Tabs
-        const tabNotes = document.getElementById('tabNotes');
-        const tabBoard = document.getElementById('tabBoard');
-        const tabPhotos = document.getElementById('tabPhotos');
-        const tabMedia = document.getElementById('tabMedia');
-        const tabSleep = document.getElementById('tabSleep');
-        const tabCanvas = document.getElementById('tabCanvas');
-        const tabMood = document.getElementById('tabMood');
+            <!-- Sleep Timer Fast Triggers -->
+            <div class="pt-2 grid grid-cols-2 gap-3">
+              <button onclick="activateSleepMode('rain', 30)" class="p-4 rounded-xl bg-slate-900 border border-slate-800 hover:border-indigo-500/50 transition text-left">
+                <div class="font-semibold text-slate-200 text-sm">30 Min Rain Sleep</div>
+                <div class="text-xs text-slate-500 mt-1">Gentle rainfall & sleep timer</div>
+              </button>
+              <button onclick="activateSleepMode('space', 60)" class="p-4 rounded-xl bg-slate-900 border border-slate-800 hover:border-indigo-500/50 transition text-left">
+                <div class="font-semibold text-slate-200 text-sm">60 Min Deep Space</div>
+                <div class="text-xs text-slate-500 mt-1">Ambient frequency meditation</div>
+              </button>
+            </div>
+          </div>
+        </div>
 
-        const notesView = document.getElementById('notesView');
-        const boardView = document.getElementById('boardView');
-        const photosView = document.getElementById('photosView');
-        const mediaView = document.getElementById('mediaView');
-        const sleepView = document.getElementById('sleepView');
-        const canvasView = document.getElementById('canvasView');
-        const moodView = document.getElementById('moodView');
+        <!-- View 4: Shared Photo Gallery / Board -->
+        <div id="view-photowall" class="view-panel flex-1 hidden p-4 md:p-6 overflow-y-auto space-y-4">
+          <div class="glass-card p-4 rounded-2xl border border-slate-800 flex flex-col sm:flex-row gap-3 items-center justify-between">
+            <div class="w-full sm:w-auto flex-1 flex gap-2">
+              <input type="text" id="photoUrlInput" placeholder="Paste image link URL (e.g. https://images.unsplash.com/...)" class="w-full bg-slate-900 border border-slate-800 text-slate-200 text-sm px-4 py-2 rounded-xl focus:outline-none focus:border-indigo-500">
+              <button onclick="addPhotoToGallery()" class="px-4 py-2 bg-indigo-600 hover:bg-indigo-500 text-white rounded-xl text-sm font-medium transition shrink-0 flex items-center gap-1.5">
+                <i class="fa-solid fa-plus"></i> Add Photo
+              </button>
+            </div>
+          </div>
 
-        // Workspace Inputs & Displays
-        const sharedDoc = document.getElementById('sharedDoc');
-        const newNoteInput = document.getElementById('newNoteInput');
-        const addNoteBtn = document.getElementById('addNoteBtn');
-        const notesList = document.getElementById('notesList');
+          <!-- Photo Cards Grid -->
+          <div id="photoGrid" class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
+            <!-- Photos injected dynamically -->
+          </div>
+        </div>
 
-        const photoUrlInput = document.getElementById('photoUrlInput');
-        const photoCaptionInput = document.getElementById('photoCaptionInput');
-        const addPhotoBtn = document.getElementById('addPhotoBtn');
-        const photosGrid = document.getElementById('photosGrid');
+      </main>
 
-        const youtubeUrlInput = document.getElementById('youtubeUrlInput');
-        const loadVideoBtn = document.getElementById('loadVideoBtn');
-        const ytPlayer = document.getElementById('ytPlayer');
-        const activeAmbientLabel = document.getElementById('activeAmbientLabel');
-        let currentAudioStream = null;
+      <!-- Right Sidebar: Room Chat & Activity -->
+      <aside class="w-80 glass-panel shrink-0 border-l border-slate-800/80 flex flex-col hidden sm:flex">
+        <div class="p-4 border-b border-slate-800 flex items-center justify-between">
+          <h2 class="font-semibold text-slate-200 flex items-center gap-2 text-sm uppercase tracking-wider">
+            <i class="fa-solid fa-comments text-indigo-400"></i> Room Chat
+          </h2>
+          <span id="onlineCount" class="text-xs bg-emerald-500/10 text-emerald-400 px-2 py-0.5 rounded-full font-medium border border-emerald-500/20">1 Active</span>
+        </div>
 
-        const toggleSleepModeBtn = document.getElementById('toggleSleepModeBtn');
-        const sleepModeStatusText = document.getElementById('sleepModeStatusText');
-        const sleepTimerLabel = document.getElementById('sleepTimerLabel');
-        const stopSleepSoundBtn = document.getElementById('stopSleepSoundBtn');
-        const sleepNoteInput = document.getElementById('sleepNoteInput');
-        const sendSleepNoteBtn = document.getElementById('sendSleepNoteBtn');
-        const sleepNotesList = document.getElementById('sleepNotesList');
+        <!-- Chat Stream -->
+        <div id="chatStream" class="flex-1 overflow-y-auto p-4 space-y-3">
+          <!-- Messages -->
+        </div>
 
-        const sketchCanvas = document.getElementById('sketchCanvas');
-        const clearCanvasBtn = document.getElementById('clearCanvasBtn');
+        <!-- Chat Input -->
+        <form onsubmit="sendChatMessage(event)" class="p-3 border-t border-slate-800 bg-slate-950/40 flex items-center gap-2">
+          <input type="text" id="chatInput" placeholder="Type a message..." class="bg-slate-900 border border-slate-800 text-xs text-slate-200 px-3 py-2.5 rounded-xl flex-1 focus:outline-none focus:border-indigo-500">
+          <button type="submit" class="p-2.5 bg-indigo-600 hover:bg-indigo-500 text-white rounded-xl text-xs transition">
+            <i class="fa-solid fa-paper-plane"></i>
+          </button>
+        </form>
+      </aside>
 
-        const activeUsersList = document.getElementById('activeUsersList');
-        const userCountBadge = document.getElementById('userCountBadge');
-        const chatMessages = document.getElementById('chatMessages');
-        const chatForm = document.getElementById('chatForm');
-        const chatInput = document.getElementById('chatInput');
-        const membersMoodList = document.getElementById('membersMoodList');
+    </div>
+  </div>
 
-        // Toast Helper
-        function showToast(msg, type = "info") {
-            const toastContainer = document.getElementById('toastContainer');
-            if (!toastContainer) return;
-            const toast = document.createElement('div');
-            const bgClass = type === 'error' ? 'bg-rose-600' : type === 'success' ? 'bg-emerald-600' : 'bg-indigo-600';
-            toast.className = `${bgClass} text-white text-xs px-4 py-2.5 rounded-xl shadow-lg transition-all duration-300 opacity-0 transform translate-y-2 pointer-events-auto flex items-center gap-2`;
-            toast.innerHTML = `<span>${escapeHTML(msg)}</span>`;
-            toastContainer.appendChild(toast);
+  <!-- Room Join / Options Modal -->
+  <div id="roomModal" class="fixed inset-0 bg-black/80 backdrop-blur-md z-50 flex items-center justify-center p-4 hidden">
+    <div class="glass-panel w-full max-w-md p-6 rounded-2xl border border-slate-800 space-y-5">
+      <div class="flex items-center justify-between">
+        <h3 class="text-lg font-bold text-white flex items-center gap-2">
+          <i class="fa-solid fa-door-open text-indigo-400"></i> Enter SyncSpace Room
+        </h3>
+        <button onclick="closeRoomModal()" class="text-slate-400 hover:text-white"><i class="fa-solid fa-xmark"></i></button>
+      </div>
 
-            setTimeout(() => {
-                toast.classList.remove('opacity-0', 'translate-y-2');
-            }, 10);
+      <div class="space-y-3">
+        <div>
+          <label class="text-xs font-semibold text-slate-400 uppercase block mb-1">Room Code / ID</label>
+          <input type="text" id="modalRoomInput" placeholder="e.g. study-hub-123" class="w-full bg-slate-900 border border-slate-800 text-sm text-slate-200 px-3.5 py-2.5 rounded-xl focus:outline-none focus:border-indigo-500">
+        </div>
+        <div>
+          <label class="text-xs font-semibold text-slate-400 uppercase block mb-1">Your Display Name</label>
+          <input type="text" id="modalNameInput" placeholder="e.g. Alex" class="w-full bg-slate-900 border border-slate-800 text-sm text-slate-200 px-3.5 py-2.5 rounded-xl focus:outline-none focus:border-indigo-500">
+        </div>
+      </div>
 
-            setTimeout(() => {
-                toast.classList.add('opacity-0', 'translate-y-2');
-                setTimeout(() => toast.remove(), 300);
-            }, 3000);
+      <div class="flex gap-2 pt-2">
+        <button onclick="applyRoomChange()" class="w-full py-2.5 bg-indigo-600 hover:bg-indigo-500 text-white rounded-xl text-sm font-medium transition">Join Room</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- YouTube IFrame API -->
+  <script src="https://www.youtube.com/iframe_api"></script>
+
+  <script>
+    // ==========================================
+    // GLOBAL STATE & VARIABLES
+    // ==========================================
+    let currentRoom = "main-room";
+    let currentUser = "User_" + Math.floor(100 + Math.random() * 900);
+    let masterMuted = false;
+    let timerInterval = null;
+    let timerSecondsRemaining = 0;
+
+    // Web Audio Synthesizer State
+    let audioCtx = null;
+    const ambientNodes = {};
+
+    // Video Engine State
+    let ytPlayer = null;
+    let isYoutubeReady = false;
+    let currentVideoType = 'youtube'; // 'youtube' or 'html5'
+    let isSyncing = false;
+
+    // Canvas State
+    let isDrawing = false;
+    let canvasTool = 'pen';
+    let canvasCtx = null;
+
+    // Soundscape Sound Definitions
+    const SOUNDSCAPES = [
+      { id: 'rain', name: 'Rain & Thunder', icon: 'fa-cloud-showers-heavy', type: 'noise' },
+      { id: 'fire', name: 'Cozy Fireplace', icon: 'fa-fire', type: 'crackle' },
+      { id: 'waves', name: 'Ocean Waves', icon: 'fa-water', type: 'waves' },
+      { id: 'space', name: 'Deep Space', icon: 'fa-user-astronaut', type: 'space' },
+      { id: 'forest', name: 'Forest Night', icon: 'fa-tree', type: 'forest' }
+    ];
+
+    // Default Photo Gallery Images
+    const photoGallery = [
+      "https://images.unsplash.com/photo-1518173946687-a4c8a383392e?auto=format&fit=crop&w=600&q=80",
+      "https://images.unsplash.com/photo-1507525428034-b723cf961d3e?auto=format&fit=crop&w=600&q=80"
+    ];
+
+    // ==========================================
+    // INITIALIZATION
+    // ==========================================
+    window.addEventListener('load', () => {
+      // Parse URL Hash Room Parameter
+      const hash = window.location.hash;
+      if (hash && hash.includes('room=')) {
+        currentRoom = hash.split('room=')[1].split('&')[0];
+      }
+      document.getElementById('currentRoomDisplay').innerText = currentRoom;
+
+      initAmbientGrid();
+      initSketchpad();
+      renderPhotoGallery();
+      initNativeVideoSync();
+
+      addSystemChatMessage(`Welcome to SyncSpace! Joined room: ${currentRoom}`);
+    });
+
+    function getAudioContext() {
+      if (!audioCtx) {
+        const AudioContextClass = window.AudioContext || window.webkitAudioContext;
+        audioCtx = new AudioContextClass();
+      }
+      if (audioCtx.state === 'suspended') {
+        audioCtx.resume();
+      }
+      return audioCtx;
+    }
+
+    // ==========================================
+    // 1. PROCEDURAL WEB AUDIO SYNTHESIZER
+    // ==========================================
+    function initAmbientGrid() {
+      const container = document.getElementById('ambientSoundGrid');
+      container.innerHTML = '';
+
+      SOUNDSCAPES.forEach(snd => {
+        const card = document.createElement('div');
+        card.className = "glass-card p-3 rounded-xl border border-slate-800/80 flex flex-col gap-2 transition hover:border-slate-700";
+        card.id = `card-${snd.id}`;
+        card.innerHTML = `
+          <div class="flex items-center justify-between">
+            <div class="flex items-center gap-2.5">
+              <div id="icon-bg-${snd.id}" class="w-8 h-8 rounded-lg bg-slate-800 text-slate-400 flex items-center justify-center transition">
+                <i class="fa-solid ${snd.icon} text-sm"></i>
+              </div>
+              <span class="text-xs font-semibold text-slate-200">${snd.name}</span>
+            </div>
+            <button onclick="toggleAmbientSound('${snd.id}')" id="btn-${snd.id}" class="p-1.5 px-3 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs font-medium transition flex items-center gap-1.5">
+              <i class="fa-solid fa-play text-[10px]"></i> Play
+            </button>
+          </div>
+          <div class="flex items-center gap-2">
+            <i class="fa-solid fa-volume-low text-[10px] text-slate-500"></i>
+            <input type="range" min="0" max="1" step="0.01" value="0.5" id="vol-${snd.id}" oninput="setAmbientVolume('${snd.id}', this.value)" class="w-full accent-indigo-500 h-1 bg-slate-800 rounded-lg appearance-none cursor-pointer">
+          </div>
+        `;
+        container.appendChild(card);
+      });
+    }
+
+    function toggleAmbientSound(id) {
+      if (ambientNodes[id] && ambientNodes[id].playing) {
+        stopProceduralSound(id);
+      } else {
+        startProceduralSound(id);
+      }
+    }
+
+    function startProceduralSound(id) {
+      const ctx = getAudioContext();
+      const soundDef = SOUNDSCAPES.find(s => s.id === id);
+      if (!soundDef) return;
+
+      const masterGain = ctx.createGain();
+      const initialVol = parseFloat(document.getElementById(`vol-${id}`).value) || 0.5;
+      masterGain.gain.value = masterMuted ? 0 : initialVol;
+      masterGain.connect(ctx.destination);
+
+      let cleanupFunc = null;
+
+      if (soundDef.type === 'noise') { // Rain & Thunder
+        const bufferSize = ctx.sampleRate * 2;
+        const buffer = ctx.createBuffer(1, bufferSize, ctx.sampleRate);
+        const data = buffer.getChannelData(0);
+        for (let i = 0; i < bufferSize; i++) {
+          data[i] = (Math.random() * 2 - 1) * 0.1;
         }
+        const noise = ctx.createBufferSource();
+        noise.buffer = buffer;
+        noise.loop = true;
 
-        function escapeHTML(str) {
-            return String(str || '').replace(/[&<>"']/g, match => {
-                const map = { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' };
-                return map[match];
-            });
+        const filter = ctx.createBiquadFilter();
+        filter.type = 'lowpass';
+        filter.frequency.value = 800;
+
+        noise.connect(filter);
+        filter.connect(masterGain);
+        noise.start();
+
+        cleanupFunc = () => { noise.stop(); noise.disconnect(); };
+      } else if (soundDef.type === 'waves') { // Ocean Waves
+        const osc = ctx.createOscillator();
+        const lfo = ctx.createOscillator();
+        const lfoGain = ctx.createGain();
+
+        osc.type = 'sine';
+        osc.frequency.value = 160;
+        lfo.frequency.value = 0.25;
+        lfoGain.gain.value = 0.4;
+
+        lfo.connect(masterGain.gain);
+        osc.connect(masterGain);
+
+        osc.start();
+        lfo.start();
+
+        cleanupFunc = () => { osc.stop(); lfo.stop(); };
+      } else if (soundDef.type === 'space') { // Deep Space
+        const osc1 = ctx.createOscillator();
+        const osc2 = ctx.createOscillator();
+        osc1.type = 'sine';
+        osc2.type = 'triangle';
+        osc1.frequency.value = 65;
+        osc2.frequency.value = 65.4;
+
+        osc1.connect(masterGain);
+        osc2.connect(masterGain);
+        osc1.start();
+        osc2.start();
+
+        cleanupFunc = () => { osc1.stop(); osc2.stop(); };
+      } else { // Fireplace & Forest Warm Hums
+        const osc = ctx.createOscillator();
+        osc.type = 'sine';
+        osc.frequency.value = id === 'fire' ? 110 : 280;
+
+        const filter = ctx.createBiquadFilter();
+        filter.type = 'bandpass';
+        filter.frequency.value = 350;
+
+        osc.connect(filter);
+        filter.connect(masterGain);
+        osc.start();
+
+        cleanupFunc = () => { osc.stop(); };
+      }
+
+      ambientNodes[id] = {
+        playing: true,
+        gainNode: masterGain,
+        cleanup: cleanupFunc
+      };
+
+      updateAmbientUI(id, true);
+    }
+
+    function stopProceduralSound(id) {
+      if (ambientNodes[id]) {
+        if (ambientNodes[id].cleanup) ambientNodes[id].cleanup();
+        ambientNodes[id].playing = false;
+      }
+      updateAmbientUI(id, false);
+    }
+
+    function setAmbientVolume(id, val) {
+      if (ambientNodes[id] && ambientNodes[id].gainNode) {
+        ambientNodes[id].gainNode.gain.value = masterMuted ? 0 : parseFloat(val);
+      }
+    }
+
+    function toggleMasterMute() {
+      masterMuted = !masterMuted;
+      const icon = document.getElementById('masterMuteIcon');
+      icon.className = masterMuted ? "fa-solid fa-volume-xmark text-rose-400" : "fa-solid fa-volume-high";
+
+      SOUNDSCAPES.forEach(snd => {
+        if (ambientNodes[snd.id] && ambientNodes[snd.id].gainNode) {
+          const targetVol = masterMuted ? 0 : parseFloat(document.getElementById(`vol-${snd.id}`).value);
+          ambientNodes[snd.id].gainNode.gain.value = targetVol;
         }
+      });
+    }
 
-        // Firebase Setup & Fallback Auth Logic
-        let auth, db, appId;
+    function updateAmbientUI(id, isPlaying) {
+      const btn = document.getElementById(`btn-${id}`);
+      const iconBg = document.getElementById(`icon-bg-${id}`);
+      if (isPlaying) {
+        btn.className = "p-1.5 px-3 rounded-lg bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-medium transition flex items-center gap-1.5 shadow-sm";
+        btn.innerHTML = `<i class="fa-solid fa-pause text-[10px]"></i> Pause`;
+        iconBg.className = "w-8 h-8 rounded-lg bg-indigo-600/20 text-indigo-400 flex items-center justify-center transition border border-indigo-500/30";
+      } else {
+        btn.className = "p-1.5 px-3 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs font-medium transition flex items-center gap-1.5";
+        btn.innerHTML = `<i class="fa-solid fa-play text-[10px]"></i> Play`;
+        iconBg.className = "w-8 h-8 rounded-lg bg-slate-800 text-slate-400 flex items-center justify-center transition";
+      }
+    }
 
-        async function initAuth() {
-            let configValid = false;
-            if (typeof __firebase_config !== 'undefined' && __firebase_config.apiKey && __firebase_config.apiKey !== 'demo-api-key') {
-                configValid = true;
-            }
+    function setSoundTimer(minutes) {
+      clearInterval(timerInterval);
+      if (minutes <= 0) {
+        timerSecondsRemaining = 0;
+        document.getElementById('timerDisplay').innerText = "Off";
+        return;
+      }
+      timerSecondsRemaining = minutes * 60;
+      updateTimerDisplay();
 
-            if (configValid) {
-                try {
-                    const firebaseConfig = __firebase_config;
-                    const app = initializeApp(firebaseConfig);
-                    auth = getAuth(app);
-                    db = getFirestore(app);
-                    appId = typeof __app_id !== 'undefined' ? __app_id : 'sync-space-app';
-
-                    const userCred = await signInAnonymously(auth);
-                    currentUserId = userCred.user.uid;
-                    if (userStatusTag) userStatusTag.textContent = `Online • ID: ${currentUserId.slice(0, 6)}`;
-                    return;
-                } catch (error) {
-                    // Fallback driver
-                }
-            }
-
-            // Fallback Mode (Local / In-Memory Mock Backend)
-            useMockBackend = true;
-            if (userStatusTag) userStatusTag.textContent = `Standalone Mode • ID: ${currentUserId.slice(0, 6)}`;
-            showToast("Connected in Standalone Mode", "info");
+      timerInterval = setInterval(() => {
+        timerSecondsRemaining--;
+        updateTimerDisplay();
+        if (timerSecondsRemaining <= 0) {
+          clearInterval(timerInterval);
+          SOUNDSCAPES.forEach(snd => stopProceduralSound(snd.id));
+          document.getElementById('timerDisplay').innerText = "Off";
         }
+      }, 1000);
+    }
 
-        // Mock Helper Event Bus
-        function triggerMockUpdate(roomId) {
-            mockListeners.forEach(cb => cb(roomId));
+    function updateTimerDisplay() {
+      const m = Math.floor(timerSecondsRemaining / 60);
+      const s = timerSecondsRemaining % 60;
+      document.getElementById('timerDisplay').innerText = `${m}:${s < 10 ? '0' : ''}${s}`;
+    }
+
+    // ==========================================
+    // 2. UNIVERSAL WATCH TOGETHER (YouTube + HTML5)
+    // ==========================================
+    function onYouTubeIframeAPIReady() {
+      ytPlayer = new YT.Player('youtubePlayer', {
+        videoId: 'jfKfPfyJRdk',
+        playerVars: { 'playsinline': 1, 'controls': 1, 'modestbranding': 1 },
+        events: {
+          'onReady': () => { isYoutubeReady = true; },
+          'onStateChange': onPlayerStateChange
         }
+      });
+    }
 
-        // Room Operations
-        if (createRoomBtn) {
-            createRoomBtn.addEventListener('click', async () => {
-                const name = usernameInput.value.trim() || 'User_' + Math.floor(Math.random() * 899 + 100);
-                displayName = name;
-                const code = Math.random().toString(36).substring(2, 8).toUpperCase();
+    function onPlayerStateChange(event) {
+      if (isSyncing) return;
+      if (event.data === YT.PlayerState.PLAYING) {
+        broadcastVideoState('play', ytPlayer.getCurrentTime());
+      } else if (event.data === YT.PlayerState.PAUSED) {
+        broadcastVideoState('pause', ytPlayer.getCurrentTime());
+      }
+    }
 
-                if (useMockBackend) {
-                    mockState.rooms[code] = {
-                        createdAt: Date.now(),
-                        documentText: "Welcome to your shared workspace doc! Anything typed here updates live.",
-                        videoUrl: "https://www.youtube-nocookie.com/embed/jfKfPfyJRdk?enablejsapi=1",
-                        users: {},
-                        messages: [],
-                        notes: [],
-                        photos: [],
-                        sleepNotes: []
-                    };
-                    await enterRoom(code);
-                } else {
-                    try {
-                        await setDoc(doc(db, 'artifacts', appId, 'public', 'data', 'rooms', code), {
-                            createdAt: Date.now(),
-                            documentText: "Welcome to your shared workspace doc! Anything typed here updates live.",
-                            videoUrl: "https://www.youtube-nocookie.com/embed/jfKfPfyJRdk?enablejsapi=1"
-                        });
-                        await enterRoom(code);
-                    } catch (err) {
-                        showToast("Could not create room", "error");
-                    }
-                }
-            });
+    function parseYoutubeId(url) {
+      if (!url) return null;
+      const regExp = /^.*(youtu.be\/|v\/|u\/\w\/|embed\/|watch\?v=|\&v=)([^#\&\?]*).*/;
+      const match = url.match(regExp);
+      return (match && match[2].length === 11) ? match[2] : null;
+    }
+
+    function loadUniversalVideo() {
+      const input = document.getElementById('videoUrlInput').value.trim();
+      if (!input) return;
+
+      const ytId = parseYoutubeId(input);
+      if (ytId) {
+        loadPreset('youtube', ytId);
+      } else {
+        loadPreset('mp4', input);
+      }
+    }
+
+    function loadPreset(type, target) {
+      const ytContainer = document.getElementById('youtubePlayerContainer');
+      const html5Container = document.getElementById('html5PlayerContainer');
+
+      if (type === 'youtube') {
+        currentVideoType = 'youtube';
+        html5Container.classList.add('hidden');
+        ytContainer.classList.remove('hidden');
+
+        if (isYoutubeReady && ytPlayer) {
+          isSyncing = true;
+          ytPlayer.loadVideoById(target);
+          setTimeout(() => { isSyncing = false; }, 800);
         }
+      } else if (type === 'mp4') {
+        currentVideoType = 'html5';
+        ytContainer.classList.add('hidden');
+        html5Container.classList.remove('hidden');
 
-        if (joinRoomBtn) {
-            joinRoomBtn.addEventListener('click', async () => {
-                const code = joinRoomInput.value.trim().toUpperCase();
-                if (!code) {
-                    showToast("Enter a room code", "error");
-                    return;
-                }
-                const name = usernameInput.value.trim() || 'User_' + Math.floor(Math.random() * 899 + 100);
-                displayName = name;
+        const videoEl = document.getElementById('nativeVideoPlayer');
+        const sourceEl = document.getElementById('nativeVideoSource');
+        sourceEl.src = target;
+        videoEl.load();
+        videoEl.play().catch(() => {});
+      }
 
-                if (useMockBackend) {
-                    if (!mockState.rooms[code]) {
-                        showToast("Room code not found", "error");
-                        return;
-                    }
-                    await enterRoom(code);
-                } else {
-                    try {
-                        const snap = await getDoc(doc(db, 'artifacts', appId, 'public', 'data', 'rooms', code));
-                        if (!snap.exists()) {
-                            showToast("Room code not found", "error");
-                            return;
-                        }
-                        await enterRoom(code);
-                    } catch (err) {
-                        showToast("Error joining room", "error");
-                    }
-                }
-            });
+      addSystemChatMessage(`Changed synchronized video stream.`);
+    }
+
+    function initNativeVideoSync() {
+      const videoEl = document.getElementById('nativeVideoPlayer');
+      videoEl.addEventListener('play', () => {
+        if (!isSyncing && currentVideoType === 'html5') {
+          broadcastVideoState('play', videoEl.currentTime);
         }
-
-        async function enterRoom(code) {
-            activeRoomId = code;
-            if (activeRoomCodeDisplay) activeRoomCodeDisplay.textContent = code;
-
-            if (lobbyScreen) lobbyScreen.classList.add('hidden');
-            if (roomWorkspace) roomWorkspace.classList.remove('hidden');
-            if (activeRoomHeader) activeRoomHeader.classList.remove('hidden');
-
-            if (useMockBackend) {
-                if (mockState.rooms[code]) {
-                    mockState.rooms[code].users[currentUserId] = {
-                        name: displayName,
-                        mood: 'Working 💻',
-                        isSleeping: false,
-                        lastActive: Date.now()
-                    };
-                }
-            } else {
-                await setDoc(doc(db, 'artifacts', appId, 'public', 'data', 'rooms', code, 'users', currentUserId), {
-                    name: displayName,
-                    mood: 'Working 💻',
-                    isSleeping: false,
-                    lastActive: Date.now()
-                });
-            }
-
-            subscribeToRoom(code);
-            subscribeToUsers(code);
-            subscribeToChat(code);
-            subscribeToNotes(code);
-            subscribeToPhotos(code);
-            subscribeToSleepNotes(code);
-
-            window.location.hash = `room=${code}`;
-            showToast(`Joined room ${code}`, "success");
+      });
+      videoEl.addEventListener('pause', () => {
+        if (!isSyncing && currentVideoType === 'html5') {
+          broadcastVideoState('pause', videoEl.currentTime);
         }
+      });
+    }
 
-        function leaveCurrentRoomListeners() {
-            if (roomUnsub) roomUnsub();
-            if (usersUnsub) usersUnsub();
-            if (chatUnsub) chatUnsub();
-            if (notesUnsub) notesUnsub();
-            if (photosUnsub) photosUnsub();
-            if (sleepNotesUnsub) sleepNotesUnsub();
-            if (currentAudioStream) {
-                currentAudioStream.pause();
-                currentAudioStream = null;
-            }
-        }
+    function broadcastVideoState(action, time) {
+      // Broadcast hook for room synchronization
+    }
 
-        async function leaveRoom() {
-            if (activeRoomId && currentUserId) {
-                if (useMockBackend) {
-                    if (mockState.rooms[activeRoomId] && mockState.rooms[activeRoomId].users) {
-                        delete mockState.rooms[activeRoomId].users[currentUserId];
-                        triggerMockUpdate(activeRoomId);
-                    }
-                } else {
-                    try {
-                        await deleteDoc(doc(db, 'artifacts', appId, 'public', 'data', 'rooms', activeRoomId, 'users', currentUserId));
-                    } catch(e){}
-                }
-            }
-            leaveCurrentRoomListeners();
-            activeRoomId = null;
-            window.location.hash = '';
-            if (roomWorkspace) roomWorkspace.classList.add('hidden');
-            if (activeRoomHeader) activeRoomHeader.classList.add('hidden');
-            if (lobbyScreen) lobbyScreen.classList.remove('hidden');
-            showToast("Left room", "info");
-        }
+    // ==========================================
+    // 3. COLLABORATIVE SKETCHPAD
+    // ==========================================
+    function initSketchpad() {
+      const canvas = document.getElementById('sketchCanvas');
+      canvasCtx = canvas.getContext('2d');
 
-        if (leaveRoomBtn) leaveRoomBtn.addEventListener('click', leaveRoom);
+      function resizeCanvas() {
+        const parent = canvas.parentElement;
+        canvas.width = parent.clientWidth;
+        canvas.height = parent.clientHeight;
+        canvasCtx.lineCap = 'round';
+        canvasCtx.lineJoin = 'round';
+      }
 
-        if (copyRoomCodeBtn) {
-            copyRoomCodeBtn.addEventListener('click', () => {
-                if (activeRoomId) {
-                    copyToClipboard(activeRoomId);
-                    showToast("Room code copied!", "success");
-                }
-            });
-        }
+      window.addEventListener('resize', resizeCanvas);
+      setTimeout(resizeCanvas, 100);
 
-        if (copyShareLinkBtn) {
-            copyShareLinkBtn.addEventListener('click', () => {
-                if (activeRoomId) {
-                    // Ensure origin doesn't duplicate trailing slashes or corrupt protocol
-                    const baseUrl = window.location.href.split('#')[0];
-                    const shareUrl = `${baseUrl}#room=${activeRoomId}`;
-                    copyToClipboard(shareUrl);
-                    showToast("Direct share link copied to clipboard!", "success");
-                }
-            });
-        }
+      canvas.addEventListener('mousedown', startDrawing);
+      canvas.addEventListener('mousemove', draw);
+      canvas.addEventListener('mouseup', stopDrawing);
+      canvas.addEventListener('mouseleave', stopDrawing);
 
-        function copyToClipboard(text) {
-            const el = document.createElement('textarea');
-            el.value = text;
-            document.body.appendChild(el);
-            el.select();
-            document.execCommand('copy');
-            document.body.removeChild(el);
-        }
+      // Touch Events
+      canvas.addEventListener('touchstart', (e) => {
+        const touch = e.touches[0];
+        const rect = canvas.getBoundingClientRect();
+        startDrawing({ clientX: touch.clientX, clientY: touch.clientY });
+      });
+      canvas.addEventListener('touchmove', (e) => {
+        const touch = e.touches[0];
+        draw({ clientX: touch.clientX, clientY: touch.clientY });
+      });
+      canvas.addEventListener('touchend', stopDrawing);
+    }
 
-        function checkUrlHashForRoom() {
-            const hash = window.location.hash;
-            if (hash && hash.includes('room=')) {
-                const roomCode = hash.split('room=')[1].split('&')[0].toUpperCase();
-                if (roomCode && joinRoomInput) {
-                    joinRoomInput.value = roomCode;
-                }
-            }
-        }
+    function startDrawing(e) {
+      isDrawing = true;
+      const canvas = document.getElementById('sketchCanvas');
+      const rect = canvas.getBoundingClientRect();
+      const x = (e.clientX || e.touches[0].clientX) - rect.left;
+      const y = (e.clientY || e.touches[0].clientY) - rect.top;
 
-        function subscribeToRoom(roomId) {
-            if (useMockBackend) {
-                const updateUI = () => {
-                    const room = mockState.rooms[roomId];
-                    if (!room) return;
-                    if (!isSelfTyping && sharedDoc && sharedDoc.value !== room.documentText) {
-                        sharedDoc.value = room.documentText || '';
-                    }
-                    if (room.videoUrl && ytPlayer && ytPlayer.src !== room.videoUrl) {
-                        ytPlayer.src = room.videoUrl;
-                    }
-                };
-                updateUI();
-                const listener = (rId) => { if (rId === roomId) updateUI(); };
-                mockListeners.push(listener);
-                roomUnsub = () => { mockListeners = mockListeners.filter(l => l !== listener); };
-            } else {
-                roomUnsub = onSnapshot(doc(db, 'artifacts', appId, 'public', 'data', 'rooms', roomId), (snapshot) => {
-                    if (!snapshot.exists()) {
-                        showToast("Room closed.", "error");
-                        leaveRoom();
-                        return;
-                    }
-                    const data = snapshot.data();
-                    if (data && data.documentText !== undefined && sharedDoc) {
-                        if (!isSelfTyping && sharedDoc.value !== data.documentText) {
-                            sharedDoc.value = data.documentText;
-                        }
-                    }
-                    if (data && data.videoUrl && ytPlayer && ytPlayer.src !== data.videoUrl) {
-                        ytPlayer.src = data.videoUrl;
-                    }
-                    if (data && data.pulseFrom && data.pulseFrom !== currentUserId) {
-                        showToast(`💖 ${data.pulseName || 'Someone'} sent a pulse!`, "success");
-                    }
-                });
-            }
+      canvasCtx.beginPath();
+      canvasCtx.moveTo(x, y);
+    }
 
-            let timeout = null;
-            if (sharedDoc) {
-                sharedDoc.addEventListener('input', () => {
-                    isSelfTyping = true;
-                    clearTimeout(timeout);
-                    timeout = setTimeout(async () => {
-                        if (!activeRoomId) return;
-                        if (useMockBackend) {
-                            if (mockState.rooms[activeRoomId]) {
-                                mockState.rooms[activeRoomId].documentText = sharedDoc.value;
-                                triggerMockUpdate(activeRoomId);
-                            }
-                        } else {
-                            try {
-                                await updateDoc(doc(db, 'artifacts', appId, 'public', 'data', 'rooms', activeRoomId), {
-                                    documentText: sharedDoc.value
-                                });
-                            } catch(e){}
-                        }
-                        isSelfTyping = false;
-                    }, 400);
-                });
-            }
-        }
+    function draw(e) {
+      if (!isDrawing) return;
+      const canvas = document.getElementById('sketchCanvas');
+      const rect = canvas.getBoundingClientRect();
+      const x = (e.clientX || e.touches[0].clientX) - rect.left;
+      const y = (e.clientY || e.touches[0].clientY) - rect.top;
 
-        if (heartbeatBtn) {
-            heartbeatBtn.addEventListener('click', async () => {
-                if (!activeRoomId) return;
-                if (useMockBackend) {
-                    showToast("💖 Pulse sent!", "success");
-                } else {
-                    try {
-                        await updateDoc(doc(db, 'artifacts', appId, 'public', 'data', 'rooms', activeRoomId), {
-                            pulseFrom: currentUserId,
-                            pulseName: displayName,
-                            pulseTime: Date.now()
-                        });
-                        showToast("Pulse sent to room!", "success");
-                    } catch(e){}
-                }
-            });
-        }
+      const color = document.getElementById('canvasColorPicker').value;
+      const width = document.getElementById('canvasLineWidth').value;
 
-        function subscribeToUsers(roomId) {
-            const renderUsers = (usersObj) => {
-                if (activeUsersList) activeUsersList.innerHTML = '';
-                if (membersMoodList) membersMoodList.innerHTML = '';
-                let count = 0;
+      canvasCtx.strokeStyle = canvasTool === 'eraser' ? '#0f172a' : color;
+      canvasCtx.lineWidth = width;
+      canvasCtx.lineTo(x, y);
+      canvasCtx.stroke();
+    }
 
-                Object.entries(usersObj || {}).forEach(([uId, user]) => {
-                    count++;
-                    const isMe = uId === currentUserId;
+    function stopDrawing() {
+      isDrawing = false;
+    }
 
-                    if (activeUsersList) {
-                        const tag = document.createElement('span');
-                        const isUserSleeping = user.isSleeping || user.mood?.includes('Sleeping');
-                        tag.className = `px-2.5 py-1 rounded-lg text-xs font-medium border flex items-center gap-1.5 ${isMe ? 'bg-indigo-600/20 text-indigo-300 border-indigo-500/40' : 'bg-slate-800 text-slate-300 border-slate-700'}`;
-                        tag.innerHTML = `<span class="w-1.5 h-1.5 rounded-full ${isUserSleeping ? 'bg-indigo-400' : 'bg-emerald-400'}"></span> ${escapeHTML(user.name)}${isUserSleeping ? ' 🌙' : ''}${isMe ? ' (You)' : ''}`;
-                        activeUsersList.appendChild(tag);
-                    }
+    function setCanvasTool(tool) {
+      canvasTool = tool;
+      document.getElementById('tool-pen').className = tool === 'pen' ? "p-2 bg-indigo-600 text-white rounded-lg text-xs transition" : "p-2 bg-slate-800 text-slate-300 hover:bg-slate-700 rounded-lg text-xs transition";
+      document.getElementById('tool-eraser').className = tool === 'eraser' ? "p-2 bg-indigo-600 text-white rounded-lg text-xs transition" : "p-2 bg-slate-800 text-slate-300 hover:bg-slate-700 rounded-lg text-xs transition";
+    }
 
-                    if (membersMoodList) {
-                        const moodItem = document.createElement('div');
-                        moodItem.className = "flex items-center justify-between p-2 rounded-lg bg-slate-900 border border-slate-800";
-                        moodItem.innerHTML = `<span class="font-medium text-slate-200">${escapeHTML(user.name)}</span> <span class="text-indigo-400 font-mono">${escapeHTML(user.mood || 'Working 💻')}</span>`;
-                        membersMoodList.appendChild(moodItem);
-                    }
-                });
+    function clearCanvas() {
+      const canvas = document.getElementById('sketchCanvas');
+      canvasCtx.clearRect(0, 0, canvas.width, canvas.height);
+    }
 
-                if (userCountBadge) userCountBadge.textContent = `${count} Online`;
-            };
+    // ==========================================
+    // 4. PHOTO GALLERY & SLEEP SPACE
+    // ==========================================
+    function renderPhotoGallery() {
+      const grid = document.getElementById('photoGrid');
+      grid.innerHTML = '';
+      photoGallery.forEach((url) => {
+        const card = document.createElement('div');
+        card.className = "glass-card p-2 rounded-2xl border border-slate-800 overflow-hidden shadow-lg group";
+        card.innerHTML = `
+          <div class="h-48 rounded-xl overflow-hidden relative">
+            <img src="${url}" class="w-full h-full object-cover group-hover:scale-105 transition duration-300" onerror="this.src='https://placehold.co/600x400/1e293b/818cf8?text=Photo+Memory'">
+          </div>
+        `;
+        grid.appendChild(card);
+      });
+    }
 
-            if (useMockBackend) {
-                renderUsers(mockState.rooms[roomId]?.users);
-                const listener = (rId) => { if (rId === roomId) renderUsers(mockState.rooms[roomId]?.users); };
-                mockListeners.push(listener);
-                usersUnsub = () => { mockListeners = mockListeners.filter(l => l !== listener); };
-            } else {
-                usersUnsub = onSnapshot(collection(db, 'artifacts', appId, 'public', 'data', 'rooms', roomId, 'users'), (snapshot) => {
-                    const usersObj = {};
-                    snapshot.forEach(docSnap => { usersObj[docSnap.id] = docSnap.data(); });
-                    renderUsers(usersObj);
-                });
-            }
-        }
+    function addPhotoToGallery() {
+      const input = document.getElementById('photoUrlInput');
+      const url = input.value.trim();
+      if (url) {
+        photoGallery.unshift(url);
+        renderPhotoGallery();
+        input.value = '';
+        addSystemChatMessage(`${currentUser} added a photo memory.`);
+      }
+    }
 
-        // Chat System
-        function subscribeToChat(roomId) {
-            const renderMessages = (msgs) => {
-                if (!chatMessages) return;
-                chatMessages.innerHTML = '';
-                msgs.forEach(m => {
-                    const isMe = m.senderId === currentUserId;
-                    const wrapper = document.createElement('div');
-                    wrapper.className = `flex flex-col ${isMe ? 'items-end' : 'items-start'}`;
-                    
-                    wrapper.innerHTML = `
-                        <div class="text-[10px] text-slate-500 mb-0.5 px-1">${escapeHTML(m.sender)}</div>
-                        <div class="max-w-[85%] px-3 py-2 rounded-2xl text-xs leading-relaxed ${isMe ? 'bg-indigo-600 text-white rounded-br-none' : 'bg-slate-800 text-slate-200 border border-slate-700 rounded-bl-none'}">
-                            ${escapeHTML(m.text)}
-                        </div>
-                    `;
-                    chatMessages.appendChild(wrapper);
-                });
-                chatMessages.scrollTop = chatMessages.scrollHeight;
-            };
+    function sendBedtimeNote() {
+      const note = document.getElementById('bedtimeNoteInput').value.trim();
+      if (note) {
+        addChatMessage(currentUser, `🌙 Bedtime Note: "${note}"`);
+        document.getElementById('bedtimeNoteInput').value = '';
+      }
+    }
 
-            if (useMockBackend) {
-                renderMessages(mockState.rooms[roomId]?.messages || []);
-                const listener = (rId) => { if (rId === roomId) renderMessages(mockState.rooms[roomId]?.messages || []); };
-                mockListeners.push(listener);
-                chatUnsub = () => { mockListeners = mockListeners.filter(l => l !== listener); };
-            } else {
-                chatUnsub = onSnapshot(collection(db, 'artifacts', appId, 'public', 'data', 'rooms', roomId, 'messages'), (snapshot) => {
-                    const msgs = [];
-                    snapshot.forEach(doc => { msgs.push({ id: doc.id, ...doc.data() }); });
-                    msgs.sort((a, b) => (a.timestamp || 0) - (b.timestamp || 0));
-                    renderMessages(msgs);
-                });
-            }
-        }
+    function activateSleepMode(soundId, minutes) {
+      setSoundTimer(minutes);
+      startProceduralSound(soundId);
+      switchTab('watch');
+      addSystemChatMessage(`Activated bedtime sleep mode (${minutes} min timer)`);
+    }
 
-        if (chatForm) {
-            chatForm.addEventListener('submit', async (e) => {
-                e.preventDefault();
-                if (!chatInput) return;
-                const text = chatInput.value.trim();
-                if (!text || !activeRoomId) return;
-                chatInput.value = '';
+    // ==========================================
+    // 5. CHAT, NAVIGATION & MODAL CONTROLS
+    // ==========================================
+    function switchTab(tabId) {
+      document.querySelectorAll('.view-panel').forEach(el => el.classList.add('hidden'));
+      document.getElementById(`view-${tabId}`).classList.remove('hidden');
 
-                if (useMockBackend) {
-                    if (mockState.rooms[activeRoomId]) {
-                        mockState.rooms[activeRoomId].messages.push({
-                            id: Math.random().toString(36).substring(2, 9),
-                            text: text,
-                            sender: displayName,
-                            senderId: currentUserId,
-                            timestamp: Date.now()
-                        });
-                        triggerMockUpdate(activeRoomId);
-                    }
-                } else {
-                    try {
-                        await addDoc(collection(db, 'artifacts', appId, 'public', 'data', 'rooms', activeRoomId, 'messages'), {
-                            text: text,
-                            sender: displayName,
-                            senderId: currentUserId,
-                            timestamp: Date.now()
-                        });
-                    } catch (err) {
-                        showToast("Failed to send message", "error");
-                    }
-                }
-            });
-        }
+      document.querySelectorAll('.nav-tab').forEach(el => {
+        el.className = "nav-tab px-4 py-1.5 rounded-lg text-sm font-medium transition-all flex items-center gap-2 text-slate-400 hover:text-slate-200";
+      });
+      const activeBtn = document.getElementById(`tab-${tabId}`);
+      if (activeBtn) {
+        activeBtn.className = "nav-tab active px-4 py-1.5 rounded-lg text-sm font-medium transition-all flex items-center gap-2 bg-indigo-600 text-white shadow-sm";
+      }
+    }
 
-        // Notes System
-        function subscribeToNotes(roomId) {
-            if (useMockBackend) {
-                renderNotes(mockState.rooms[roomId]?.notes || []);
-                const listener = (rId) => { if (rId === roomId) renderNotes(mockState.rooms[roomId]?.notes || []); };
-                mockListeners.push(listener);
-                notesUnsub = () => { mockListeners = mockListeners.filter(l => l !== listener); };
-            } else {
-                notesUnsub = onSnapshot(collection(db, 'artifacts', appId, 'public', 'data', 'rooms', roomId, 'notes'), (snapshot) => {
-                    const notes = [];
-                    snapshot.forEach(doc => { notes.push({ id: doc.id, ...doc.data() }); });
-                    notes.sort((a, b) => (b.timestamp || 0) - (a.timestamp || 0));
-                    renderNotes(notes);
-                });
-            }
-        }
+    function sendChatMessage(e) {
+      e.preventDefault();
+      const input = document.getElementById('chatInput');
+      const msg = input.value.trim();
+      if (!msg) return;
 
-        function renderNotes(notes) {
-            if (!notesList) return;
-            notesList.innerHTML = '';
-            if (notes.length === 0) {
-                notesList.innerHTML = `<div class="col-span-full text-center py-8 text-slate-500 text-xs">No cards yet. Add one below!</div>`;
-                return;
-            }
-            notes.forEach(note => {
-                const card = document.createElement('div');
-                card.className = "bg-slate-800 border border-slate-700 p-3 rounded-xl flex flex-col justify-between space-y-2 shadow-md";
-                card.innerHTML = `
-                    <p class="text-xs text-slate-200 font-medium whitespace-pre-wrap">${escapeHTML(note.text)}</p>
-                    <div class="flex items-center justify-between text-[10px] text-slate-400 pt-2 border-t border-slate-700/60">
-                        <span>${escapeHTML(note.author)}</span>
-                        <button class="delete-note-btn text-slate-500 hover:text-rose-400 transition" data-id="${note.id}">
-                            <i class="fa-solid fa-trash-can"></i>
-                        </button>
-                    </div>
-                `;
-                notesList.appendChild(card);
-            });
+      addChatMessage(currentUser, msg);
+      input.value = '';
+    }
 
-            document.querySelectorAll('.delete-note-btn').forEach(btn => {
-                btn.addEventListener('click', async (e) => {
-                    const noteId = e.currentTarget.getAttribute('data-id');
-                    if (noteId && activeRoomId) {
-                        if (useMockBackend) {
-                            if (mockState.rooms[activeRoomId]) {
-                                mockState.rooms[activeRoomId].notes = mockState.rooms[activeRoomId].notes.filter(n => n.id !== noteId);
-                                triggerMockUpdate(activeRoomId);
-                            }
-                        } else {
-                            try { await deleteDoc(doc(db, 'artifacts', appId, 'public', 'data', 'rooms', activeRoomId, 'notes', noteId)); } catch(err){}
-                        }
-                    }
-                });
-            });
-        }
+    function addChatMessage(user, text) {
+      const stream = document.getElementById('chatStream');
+      const msgEl = document.createElement('div');
+      msgEl.className = "bg-slate-900/80 p-2.5 rounded-xl border border-slate-800 text-xs space-y-1";
+      msgEl.innerHTML = `
+        <div class="flex items-center justify-between">
+          <span class="font-semibold text-indigo-300">${user}</span>
+          <span class="text-[10px] text-slate-500">${new Date().toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}</span>
+        </div>
+        <p class="text-slate-300">${text}</p>
+      `;
+      stream.appendChild(msgEl);
+      stream.scrollTop = stream.scrollHeight;
+    }
 
-        if (addNoteBtn) {
-            addNoteBtn.addEventListener('click', async () => {
-                if (!newNoteInput) return;
-                const text = newNoteInput.value.trim();
-                if (!text || !activeRoomId) return;
-                newNoteInput.value = '';
+    function addSystemChatMessage(text) {
+      const stream = document.getElementById('chatStream');
+      const msgEl = document.createElement('div');
+      msgEl.className = "text-center my-2 text-[11px] text-slate-500 italic";
+      msgEl.innerText = text;
+      stream.appendChild(msgEl);
+      stream.scrollTop = stream.scrollHeight;
+    }
 
-                if (useMockBackend) {
-                    if (mockState.rooms[activeRoomId]) {
-                        mockState.rooms[activeRoomId].notes.unshift({
-                            id: Math.random().toString(36).substring(2, 9),
-                            text: text,
-                            author: displayName,
-                            authorId: currentUserId,
-                            timestamp: Date.now()
-                        });
-                        triggerMockUpdate(activeRoomId);
-                    }
-                } else {
-                    try {
-                        await addDoc(collection(db, 'artifacts', appId, 'public', 'data', 'rooms', activeRoomId, 'notes'), {
-                            text: text,
-                            author: displayName,
-                            authorId: currentUserId,
-                            timestamp: Date.now()
-                        });
-                    } catch (err) {
-                        showToast("Failed to add card", "error");
-                    }
-                }
-            });
-        }
+    function sendHeartbeat() {
+      addSystemChatMessage(`❤️ ${currentUser} sent a heartbeat pulse!`);
+    }
 
-        // Photo Wall System
-        function subscribeToPhotos(roomId) {
-            if (useMockBackend) {
-                renderPhotos(mockState.rooms[roomId]?.photos || []);
-                const listener = (rId) => { if (rId === roomId) renderPhotos(mockState.rooms[roomId]?.photos || []); };
-                mockListeners.push(listener);
-                photosUnsub = () => { mockListeners = mockListeners.filter(l => l !== listener); };
-            } else {
-                photosUnsub = onSnapshot(collection(db, 'artifacts', appId, 'public', 'data', 'rooms', roomId, 'photos'), (snapshot) => {
-                    const photos = [];
-                    snapshot.forEach(doc => { photos.push({ id: doc.id, ...doc.data() }); });
-                    photos.sort((a, b) => (b.timestamp || 0) - (a.timestamp || 0));
-                    renderPhotos(photos);
-                });
-            }
-        }
+    function toggleVoiceCall() {
+      const icon = document.getElementById('voiceIcon');
+      const text = document.getElementById('voiceStatusText');
+      const btn = document.getElementById('voiceToggleBtn');
 
-        function renderPhotos(photos) {
-            if (!photosGrid) return;
-            photosGrid.innerHTML = '';
-            if (photos.length === 0) {
-                photosGrid.innerHTML = `<div class="col-span-full text-center py-8 text-slate-500 text-xs">No photos shared yet. Paste an image URL below to pin a photo!</div>`;
-                return;
-            }
-            photos.forEach(photo => {
-                const card = document.createElement('div');
-                card.className = "bg-slate-800 border border-slate-700/80 rounded-xl overflow-hidden flex flex-col shadow-md group hover:border-indigo-500/50 transition";
-                card.innerHTML = `
-                    <div class="h-32 bg-slate-950 overflow-hidden relative">
-                        <img src="${escapeHTML(photo.url)}" alt="Snapshot" class="w-full h-full object-cover group-hover:scale-105 transition duration-300" 
-                            onerror="this.onerror=null;this.src='https://placehold.co/600x400/1e293b/94a3b8?text=Image+Unavailable';">
-                    </div>
-                    <div class="p-2 flex-1 flex flex-col justify-between space-y-1">
-                        <p class="text-xs text-slate-200 font-medium truncate">${escapeHTML(photo.caption || 'Photo Memory')}</p>
-                        <div class="flex items-center justify-between text-[10px] text-slate-400 pt-1 border-t border-slate-700/40">
-                            <span>By ${escapeHTML(photo.author || 'Member')}</span>
-                            <button class="delete-photo-btn text-slate-500 hover:text-rose-400 transition" data-id="${photo.id}">
-                                <i class="fa-solid fa-trash-can"></i>
-                            </button>
-                        </div>
-                    </div>
-                `;
-                photosGrid.appendChild(card);
-            });
+      if (icon.classList.contains('fa-microphone-slash')) {
+        icon.className = "fa-solid fa-microphone text-emerald-400";
+        text.innerText = "Connected";
+        btn.className = "px-3 py-1.5 rounded-xl text-xs md:text-sm font-medium bg-emerald-500/10 text-emerald-300 border border-emerald-500/30 transition flex items-center gap-2";
+        addSystemChatMessage(`${currentUser} joined voice call.`);
+      } else {
+        icon.className = "fa-solid fa-microphone-slash text-rose-400";
+        text.innerText = "Voice Call";
+        btn.className = "px-3 py-1.5 rounded-xl text-xs md:text-sm font-medium bg-slate-800 hover:bg-slate-700 text-slate-300 border border-slate-700 transition flex items-center gap-2";
+      }
+    }
 
-            document.querySelectorAll('.delete-photo-btn').forEach(btn => {
-                btn.addEventListener('click', async (e) => {
-                    const photoId = e.currentTarget.getAttribute('data-id');
-                    if (photoId && activeRoomId) {
-                        if (useMockBackend) {
-                            if (mockState.rooms[activeRoomId]) {
-                                mockState.rooms[activeRoomId].photos = mockState.rooms[activeRoomId].photos.filter(p => p.id !== photoId);
-                                triggerMockUpdate(activeRoomId);
-                            }
-                        } else {
-                            try { await deleteDoc(doc(db, 'artifacts', appId, 'public', 'data', 'rooms', activeRoomId, 'photos', photoId)); } catch(err){}
-                        }
-                    }
-                });
-            });
-        }
+    function copyShareLink() {
+      const shareUrl = `${window.location.origin}${window.location.pathname}#room=${currentRoom}`;
+      navigator.clipboard.writeText(shareUrl).then(() => {
+        addSystemChatMessage(`Share URL copied to clipboard!`);
+      });
+    }
 
-        if (addPhotoBtn) {
-            addPhotoBtn.addEventListener('click', async () => {
-                if (!photoUrlInput || !photoCaptionInput) return;
-                const url = photoUrlInput.value.trim();
-                const caption = photoCaptionInput.value.trim();
-                if (!url || !activeRoomId) {
-                    showToast("Please enter an image URL", "error");
-                    return;
-                }
-                photoUrlInput.value = '';
-                photoCaptionInput.value = '';
+    function updateMoodStatus() {
+      const mood = document.getElementById('userMoodInput').value.trim();
+      if (mood) {
+        addSystemChatMessage(`${currentUser} set vibe: "${mood}"`);
+        document.getElementById('userMoodInput').value = '';
+      }
+    }
 
-                if (useMockBackend) {
-                    if (mockState.rooms[activeRoomId]) {
-                        mockState.rooms[activeRoomId].photos.unshift({
-                            id: Math.random().toString(36).substring(2, 9),
-                            url: url,
-                            caption: caption,
-                            author: displayName,
-                            authorId: currentUserId,
-                            timestamp: Date.now()
-                        });
-                        triggerMockUpdate(activeRoomId);
-                        showToast("Photo posted!", "success");
-                    }
-                } else {
-                    try {
-                        await addDoc(collection(db, 'artifacts', appId, 'public', 'data', 'rooms', activeRoomId, 'photos'), {
-                            url: url,
-                            caption: caption,
-                            author: displayName,
-                            authorId: currentUserId,
-                            timestamp: Date.now()
-                        });
-                        showToast("Photo posted!", "success");
-                    } catch (err) {
-                        showToast("Failed to post photo", "error");
-                    }
-                }
-            });
-        }
+    function openRoomModal() {
+      document.getElementById('roomModal').classList.remove('hidden');
+    }
 
-        // Watch Together & Ambient Audio Stream
-        if (loadVideoBtn) {
-            loadVideoBtn.addEventListener('click', async () => {
-                if (!youtubeUrlInput) return;
-                const val = youtubeUrlInput.value.trim();
-                if (!val || !activeRoomId) return;
+    function closeRoomModal() {
+      document.getElementById('roomModal').classList.add('hidden');
+    }
 
-                let videoId = val;
-                if (val.includes('v=')) {
-                    videoId = val.split('v=')[1].split('&')[0];
-                } else if (val.includes('youtu.be/')) {
-                    videoId = val.split('youtu.be/')[1].split('?')[0];
-                }
+    function applyRoomChange() {
+      const newRoom = document.getElementById('modalRoomInput').value.trim();
+      const newName = document.getElementById('modalNameInput').value.trim();
 
-                const embedUrl = `https://www.youtube-nocookie.com/embed/${videoId}?autoplay=1&enablejsapi=1`;
+      if (newRoom) {
+        currentRoom = newRoom;
+        window.location.hash = `room=${currentRoom}`;
+        document.getElementById('currentRoomDisplay').innerText = currentRoom;
+      }
+      if (newName) currentUser = newName;
 
-                if (useMockBackend) {
-                    if (mockState.rooms[activeRoomId]) {
-                        mockState.rooms[activeRoomId].videoUrl = embedUrl;
-                        triggerMockUpdate(activeRoomId);
-                        youtubeUrlInput.value = '';
-                        showToast("Video synced!", "success");
-                    }
-                } else {
-                    try {
-                        await updateDoc(doc(db, 'artifacts', appId, 'public', 'data', 'rooms', activeRoomId), { videoUrl: embedUrl });
-                        youtubeUrlInput.value = '';
-                        showToast("Video synced for room!", "success");
-                    } catch(e) {
-                        showToast("Error syncing video", "error");
-                    }
-                }
-            });
-        }
-
-        const ambientAudioMap = {
-            'lofi': 'https://cdn.pixabay.com/download/audio/2022/05/27/audio_1808fbf07a.mp3?filename=lofi-study-112191.mp3',
-            'rain': 'https://cdn.pixabay.com/download/audio/2021/09/06/audio_4d5b2bc2bb.mp3?filename=rain-and-thunder-142522.mp3',
-            'fire': 'https://cdn.pixabay.com/download/audio/2022/01/18/audio_d0a13f69d2.mp3?filename=crackling-fireplace-nature-sound-11003.mp3',
-            'waves': 'https://cdn.pixabay.com/download/audio/2022/03/24/audio_c36e4f3a74.mp3?filename=ocean-waves-ambient-110300.mp3',
-            'space': 'https://cdn.pixabay.com/download/audio/2022/01/18/audio_d0a13f69d2.mp3?filename=crackling-fireplace-nature-sound-11003.mp3'
-        };
-
-        document.querySelectorAll('.ambient-btn, .sleep-sound-btn').forEach(btn => {
-            btn.addEventListener('click', (e) => {
-                const target = e.currentTarget;
-                const type = target.getAttribute('data-sound') || target.getAttribute('data-sleep-sound');
-                if (currentAudioStream) {
-                    currentAudioStream.pause();
-                    currentAudioStream = null;
-                }
-
-                if (activeAmbientLabel && activeAmbientLabel.textContent.toLowerCase().includes(type)) {
-                    activeAmbientLabel.textContent = "Off";
-                    showToast("Ambient sound paused", "info");
-                    return;
-                }
-
-                if (ambientAudioMap[type]) {
-                    currentAudioStream = new Audio(ambientAudioMap[type]);
-                    currentAudioStream.loop = true;
-                    currentAudioStream.volume = 0.5;
-                    currentAudioStream.play().then(() => {
-                        if (activeAmbientLabel) activeAmbientLabel.textContent = `Playing: ${type.toUpperCase()}`;
-                        showToast(`Playing ambient ${type}`, "success");
-                    }).catch(() => {
-                        showToast("Failed to load ambient audio", "error");
-                    });
-                }
-            });
-        });
-
-        // Muse Sleep Space Features
-        if (toggleSleepModeBtn) {
-            toggleSleepModeBtn.addEventListener('click', async () => {
-                isSleeping = !isSleeping;
-                const mood = isSleeping ? 'Sleeping / In Bed 🌙' : 'Working 💻';
-                
-                if (isSleeping) {
-                    if (sleepModeStatusText) sleepModeStatusText.textContent = "Status: In Bed 🌙 (Wake Up)";
-                    toggleSleepModeBtn.className = "bg-purple-900/80 hover:bg-purple-800 border border-purple-600 text-purple-200 px-3.5 py-1.5 rounded-xl text-xs font-medium transition flex items-center gap-2 shrink-0";
-                    showToast("Set status to Sleeping 🌙", "success");
-                } else {
-                    if (sleepModeStatusText) sleepModeStatusText.textContent = "Set Status: Going to Bed";
-                    toggleSleepModeBtn.className = "bg-indigo-900/60 hover:bg-indigo-800/80 border border-indigo-700/60 text-indigo-200 px-3.5 py-1.5 rounded-xl text-xs font-medium transition flex items-center gap-2 shrink-0";
-                    showToast("Welcome back awake!", "info");
-                }
-
-                if (activeRoomId && currentUserId) {
-                    if (useMockBackend) {
-                        if (mockState.rooms[activeRoomId] && mockState.rooms[activeRoomId].users[currentUserId]) {
-                            mockState.rooms[activeRoomId].users[currentUserId].isSleeping = isSleeping;
-                            mockState.rooms[activeRoomId].users[currentUserId].mood = mood;
-                            triggerMockUpdate(activeRoomId);
-                        }
-                    } else {
-                        try {
-                            await updateDoc(doc(db, 'artifacts', appId, 'public', 'data', 'rooms', activeRoomId, 'users', currentUserId), {
-                                isSleeping: isSleeping,
-                                mood: mood
-                            });
-                        } catch(e){}
-                    }
-                }
-            });
-        }
-
-        document.querySelectorAll('.sleep-timer-btn').forEach(btn => {
-            btn.addEventListener('click', (e) => {
-                const mins = parseInt(e.currentTarget.getAttribute('data-minutes'), 10);
-                if (sleepTimerTimeout) clearTimeout(sleepTimerTimeout);
-                
-                if (sleepTimerLabel) sleepTimerLabel.textContent = `Timer: ${mins} mins`;
-                showToast(`Sleep timer set for ${mins} minutes`, "info");
-
-                sleepTimerTimeout = setTimeout(() => {
-                    if (currentAudioStream) {
-                        currentAudioStream.pause();
-                        currentAudioStream = null;
-                    }
-                    if (sleepTimerLabel) sleepTimerLabel.textContent = "Timer: Off";
-                    showToast("Sleep timer finished - audio paused", "info");
-                }, mins * 60 * 1000);
-            });
-        });
-
-        if (stopSleepSoundBtn) {
-            stopSleepSoundBtn.addEventListener('click', () => {
-                if (currentAudioStream) {
-                    currentAudioStream.pause();
-                    currentAudioStream = null;
-                }
-                if (sleepTimerTimeout) clearTimeout(sleepTimerTimeout);
-                if (sleepTimerLabel) sleepTimerLabel.textContent = "Timer: Off";
-                if (activeAmbientLabel) activeAmbientLabel.textContent = "Off";
-                showToast("Audio stopped", "info");
-            });
-        }
-
-        function subscribeToSleepNotes(roomId) {
-            if (useMockBackend) {
-                renderSleepNotes(mockState.rooms[roomId]?.sleepNotes || []);
-                const listener = (rId) => { if (rId === roomId) renderSleepNotes(mockState.rooms[roomId]?.sleepNotes || []); };
-                mockListeners.push(listener);
-                sleepNotesUnsub = () => { mockListeners = mockListeners.filter(l => l !== listener); };
-            } else {
-                sleepNotesUnsub = onSnapshot(collection(db, 'artifacts', appId, 'public', 'data', 'rooms', roomId, 'sleepNotes'), (snapshot) => {
-                    const notes = [];
-                    snapshot.forEach(doc => { notes.push({ id: doc.id, ...doc.data() }); });
-                    notes.sort((a, b) => (b.timestamp || 0) - (a.timestamp || 0));
-                    renderSleepNotes(notes);
-                });
-            }
-        }
-
-        function renderSleepNotes(notes) {
-            if (!sleepNotesList) return;
-            sleepNotesList.innerHTML = '';
-            if (notes.length === 0) {
-                sleepNotesList.innerHTML = `<div class="text-center py-4 text-slate-500 text-xs">No bedtime notes yet. Leave a sweet message above!</div>`;
-                return;
-            }
-            notes.forEach(note => {
-                const item = document.createElement('div');
-                item.className = "bg-slate-900 border border-slate-800 p-2.5 rounded-xl text-xs space-y-1";
-                item.innerHTML = `
-                    <div class="flex items-center justify-between text-[10px] text-indigo-400">
-                        <span class="font-medium">${escapeHTML(note.author)}</span>
-                        <span>${new Date(note.timestamp).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}</span>
-                    </div>
-                    <p class="text-slate-200">${escapeHTML(note.text)}</p>
-                `;
-                sleepNotesList.appendChild(item);
-            });
-        }
-
-        if (sendSleepNoteBtn) {
-            sendSleepNoteBtn.addEventListener('click', async () => {
-                if (!sleepNoteInput) return;
-                const text = sleepNoteInput.value.trim();
-                if (!text || !activeRoomId) return;
-                sleepNoteInput.value = '';
-
-                if (useMockBackend) {
-                    if (mockState.rooms[activeRoomId]) {
-                        if (!mockState.rooms[activeRoomId].sleepNotes) mockState.rooms[activeRoomId].sleepNotes = [];
-                        mockState.rooms[activeRoomId].sleepNotes.unshift({
-                            id: Math.random().toString(36).substring(2, 9),
-                            text: text,
-                            author: displayName,
-                            timestamp: Date.now()
-                        });
-                        triggerMockUpdate(activeRoomId);
-                        showToast("Sleep note left!", "success");
-                    }
-                } else {
-                    try {
-                        await addDoc(collection(db, 'artifacts', appId, 'public', 'data', 'rooms', activeRoomId, 'sleepNotes'), {
-                            text: text,
-                            author: displayName,
-                            timestamp: Date.now()
-                        });
-                        showToast("Sleep note left!", "success");
-                    } catch (err) {
-                        showToast("Failed to send sleep note", "error");
-                    }
-                }
-            });
-        }
-
-        // Sketch Canvas
-        let isDrawing = false;
-        let ctx = sketchCanvas ? sketchCanvas.getContext('2d') : null;
-
-        function resizeCanvas() {
-            if (!sketchCanvas || !ctx) return;
-            sketchCanvas.width = sketchCanvas.parentElement.clientWidth;
-            sketchCanvas.height = sketchCanvas.parentElement.clientHeight || 280;
-            ctx.strokeStyle = '#818cf8';
-            ctx.lineWidth = 3;
-            ctx.lineCap = 'round';
-        }
-
-        if (sketchCanvas && ctx) {
-            sketchCanvas.addEventListener('mousedown', (e) => {
-                isDrawing = true;
-                const rect = sketchCanvas.getBoundingClientRect();
-                ctx.beginPath();
-                ctx.moveTo(e.clientX - rect.left, e.clientY - rect.top);
-            });
-
-            sketchCanvas.addEventListener('mousemove', (e) => {
-                if (!isDrawing) return;
-                const rect = sketchCanvas.getBoundingClientRect();
-                ctx.lineTo(e.clientX - rect.left, e.clientY - rect.top);
-                ctx.stroke();
-            });
-
-            sketchCanvas.addEventListener('mouseup', () => { isDrawing = false; });
-            sketchCanvas.addEventListener('mouseleave', () => { isDrawing = false; });
-        }
-
-        if (clearCanvasBtn && sketchCanvas && ctx) {
-            clearCanvasBtn.addEventListener('click', () => {
-                ctx.clearRect(0, 0, sketchCanvas.width, sketchCanvas.height);
-            });
-        }
-
-        // Mood Selection
-        document.querySelectorAll('.mood-option').forEach(btn => {
-            btn.addEventListener('click', async (e) => {
-                const mood = e.currentTarget.getAttribute('data-mood');
-                if (activeRoomId && currentUserId) {
-                    if (useMockBackend) {
-                        if (mockState.rooms[activeRoomId] && mockState.rooms[activeRoomId].users[currentUserId]) {
-                            mockState.rooms[activeRoomId].users[currentUserId].mood = mood;
-                            triggerMockUpdate(activeRoomId);
-                            showToast(`Updated mood: ${mood}`, "success");
-                        }
-                    } else {
-                        try {
-                            await updateDoc(doc(db, 'artifacts', appId, 'public', 'data', 'rooms', activeRoomId, 'users', currentUserId), {
-                                mood: mood
-                            });
-                            showToast(`Updated mood: ${mood}`, "success");
-                        } catch(err){}
-                    }
-                }
-            });
-        });
-
-        // Navigation Tabs
-        function switchTab(activeTab, activeView) {
-            const tabs = [tabNotes, tabBoard, tabPhotos, tabMedia, tabSleep, tabCanvas, tabMood];
-            const views = [notesView, boardView, photosView, mediaView, sleepView, canvasView, moodView];
-
-            tabs.forEach(t => {
-                if (t) t.className = "px-3 py-1.5 rounded-lg font-medium text-slate-400 hover:text-white transition whitespace-nowrap";
-            });
-            views.forEach(v => {
-                if (v) v.classList.add('hidden');
-            });
-
-            if (activeTab) activeTab.className = "px-3 py-1.5 rounded-lg font-medium bg-indigo-600 text-white transition whitespace-nowrap";
-            if (activeView) activeView.classList.remove('hidden');
-
-            if (activeView === canvasView) {
-                setTimeout(resizeCanvas, 50);
-            }
-        }
-
-        if (tabNotes && notesView) tabNotes.addEventListener('click', () => switchTab(tabNotes, notesView));
-        if (tabBoard && boardView) tabBoard.addEventListener('click', () => switchTab(tabBoard, boardView));
-        if (tabPhotos && photosView) tabPhotos.addEventListener('click', () => switchTab(tabPhotos, photosView));
-        if (tabMedia && mediaView) tabMedia.addEventListener('click', () => switchTab(tabMedia, mediaView));
-        if (tabSleep && sleepView) tabSleep.addEventListener('click', () => switchTab(tabSleep, sleepView));
-        if (tabCanvas && canvasView) tabCanvas.addEventListener('click', () => switchTab(tabCanvas, canvasView));
-        if (tabMood && moodView) tabMood.addEventListener('click', () => switchTab(tabMood, moodView));
-
-        window.addEventListener('resize', resizeCanvas);
-        window.addEventListener('load', async () => { 
-            await initAuth(); 
-            checkUrlHashForRoom();
-        });
-    </script>
+      closeRoomModal();
+      addSystemChatMessage(`Switched to room: ${currentRoom}`);
+    }
+  </script>
 </body>
 </html>
