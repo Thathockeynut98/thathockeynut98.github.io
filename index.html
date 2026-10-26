@@ -14,13 +14,8 @@
         extend: {
           colors: {
             brand: {
-              50: '#f0f4ff',
-              100: '#e0e9ff',
-              400: '#818cf8',
-              500: '#6366f1',
-              600: '#4f46e5',
-              700: '#4338ca',
-              900: '#1e1b4b',
+              50: '#f0f4ff', 100: '#e0e9ff', 400: '#818cf8',
+              500: '#6366f1', 600: '#4f46e5', 700: '#4338ca', 900: '#1e1b4b',
             }
           }
         }
@@ -48,28 +43,15 @@
       backdrop-filter: blur(12px);
       border: 1px solid rgba(255, 255, 255, 0.06);
     }
-    ::-webkit-scrollbar {
-      width: 6px;
-      height: 6px;
-    }
-    ::-webkit-scrollbar-track {
-      background: rgba(15, 23, 42, 0.6);
-    }
-    ::-webkit-scrollbar-thumb {
-      background: rgba(99, 102, 241, 0.4);
-      border-radius: 9999px;
-    }
-    ::-webkit-scrollbar-thumb:hover {
-      background: rgba(99, 102, 241, 0.7);
-    }
-    .pulse-glow {
-      animation: pulseGlow 2s infinite;
-    }
-    @keyframes pulseGlow {
-      0%, 100% { box-shadow: 0 0 15px rgba(99, 102, 241, 0.3); }
-      50% { box-shadow: 0 0 25px rgba(99, 102, 241, 0.6); }
-    }
+    ::-webkit-scrollbar { width: 6px; height: 6px; }
+    ::-webkit-scrollbar-track { background: rgba(15, 23, 42, 0.6); }
+    ::-webkit-scrollbar-thumb { background: rgba(99, 102, 241, 0.4); border-radius: 9999px; }
+    ::-webkit-scrollbar-thumb:hover { background: rgba(99, 102, 241, 0.7); }
   </style>
+
+  <!-- Firebase Compatibility Libraries (Guarantees Global Scope Access) -->
+  <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-database-compat.js"></script>
 </head>
 <body class="h-full text-slate-100 flex flex-col overflow-hidden selection:bg-indigo-500 selection:text-white">
 
@@ -88,7 +70,7 @@
           </h1>
           <p class="text-xs text-slate-400 flex items-center gap-1.5">
             <span class="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
-            Room Code: <span id="currentRoomDisplay" class="font-mono text-indigo-300 font-semibold uppercase">MAIN-ROOM</span>
+            Room Code: <span id="currentRoomDisplay" class="font-mono text-indigo-300 font-semibold uppercase">LOADING...</span>
           </p>
         </div>
       </div>
@@ -109,7 +91,7 @@
         </button>
       </nav>
 
-      <!-- Quick Room Actions & Controls -->
+      <!-- Quick Room Actions -->
       <div class="flex items-center gap-2 md:gap-3">
         <button onclick="sendHeartbeat()" class="p-2.5 rounded-xl bg-pink-500/10 hover:bg-pink-500/20 text-pink-400 border border-pink-500/20 transition hover:scale-105" title="Send Heartbeat Pulse">
           <i class="fa-solid fa-heart animate-pulse"></i>
@@ -163,9 +145,7 @@
           </div>
 
           <!-- Ambient Tracks List -->
-          <div id="ambientSoundGrid" class="space-y-3">
-            <!-- Dynamically Rendered Track Controls -->
-          </div>
+          <div id="ambientSoundGrid" class="space-y-3"></div>
         </div>
 
         <!-- Room Vibe & Mood Sync -->
@@ -191,9 +171,8 @@
           <button onclick="switchTab('photowall')" id="mob-tab-photowall" class="px-3 py-1.5 rounded-lg font-medium text-slate-400">Photos</button>
         </div>
 
-        <!-- View 1: Universal Watch Together (YouTube + Native HTML5 Video) -->
+        <!-- View 1: Watch Together -->
         <div id="view-watch" class="view-panel flex-1 flex flex-col p-4 md:p-6 overflow-y-auto space-y-4">
-          <!-- Universal Video Input -->
           <div class="glass-card p-4 rounded-2xl border border-slate-800 flex flex-col lg:flex-row gap-3 items-center justify-between">
             <div class="w-full lg:w-auto flex-1 flex flex-col sm:flex-row gap-2">
               <div class="relative flex-1">
@@ -205,7 +184,7 @@
               </button>
             </div>
 
-            <!-- Quick Sync Presets -->
+            <!-- Presets -->
             <div class="w-full lg:w-auto flex items-center gap-1.5 overflow-x-auto pb-1 lg:pb-0 text-xs">
               <span class="text-slate-400 font-medium shrink-0">Presets:</span>
               <button onclick="loadPreset('youtube', 'jfKfPfyJRdk')" class="px-2.5 py-1 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 transition shrink-0"><i class="fa-brands fa-youtube text-red-400"></i> Lofi Girl</button>
@@ -214,646 +193,41 @@
             </div>
           </div>
 
-          <!-- Player Viewing Box -->
+          <!-- Video Display Player -->
           <div class="flex-1 min-h-[300px] md:min-h-[440px] bg-black rounded-2xl overflow-hidden shadow-2xl relative border border-slate-800/80 flex items-center justify-center">
-            
-            <!-- YouTube Embed Container -->
             <div id="youtubePlayerContainer" class="w-full h-full">
               <div id="youtubePlayer" class="w-full h-full"></div>
             </div>
-
-            <!-- Native HTML5 Video Player Container -->
             <div id="html5PlayerContainer" class="w-full h-full hidden bg-black flex flex-col items-center justify-center relative">
               <video id="nativeVideoPlayer" class="w-full h-full object-contain" controls>
                 <source id="nativeVideoSource" src="" type="video/mp4">
-                Your browser does not support HTML5 video streaming.
               </video>
             </div>
-
           </div>
         </div>
 
-        <!-- View 2: Collaborative Canvas / Sketchpad -->
+        <!-- View 2: Canvas -->
         <div id="view-sketch" class="view-panel flex-1 hidden p-4 md:p-6 flex flex-col h-full overflow-hidden">
           <div class="glass-card p-3 rounded-2xl border border-slate-800 mb-3 flex flex-wrap items-center justify-between gap-3">
             <div class="flex items-center gap-2">
               <label class="text-xs text-slate-400 font-medium">Tool:</label>
               <button onclick="setCanvasTool('pen')" id="tool-pen" class="p-2 bg-indigo-600 text-white rounded-lg text-xs transition"><i class="fa-solid fa-pen"></i> Pen</button>
               <button onclick="setCanvasTool('eraser')" id="tool-eraser" class="p-2 bg-slate-800 text-slate-300 hover:bg-slate-700 rounded-lg text-xs transition"><i class="fa-solid fa-eraser"></i> Eraser</button>
-              
               <div class="h-4 w-px bg-slate-700 mx-1"></div>
-              
               <label class="text-xs text-slate-400 font-medium">Color:</label>
               <input type="color" id="canvasColorPicker" value="#6366f1" class="w-7 h-7 rounded bg-transparent cursor-pointer border-0">
-              
               <div class="h-4 w-px bg-slate-700 mx-1"></div>
-              
               <label class="text-xs text-slate-400 font-medium">Size:</label>
               <input type="range" id="canvasLineWidth" min="1" max="30" value="4" class="w-20 accent-indigo-500">
             </div>
-
-            <div class="flex items-center gap-2">
-              <button onclick="clearCanvas()" class="px-3 py-1.5 bg-rose-500/20 text-rose-300 hover:bg-rose-500/30 rounded-xl text-xs font-medium border border-rose-500/30 transition flex items-center gap-1.5">
-                <i class="fa-solid fa-trash"></i> Clear Canvas
-              </button>
-            </div>
+            <button onclick="clearCanvas()" class="px-3 py-1.5 bg-rose-500/20 text-rose-300 hover:bg-rose-500/30 rounded-xl text-xs font-medium border border-rose-500/30 transition flex items-center gap-1.5">
+              <i class="fa-solid fa-trash"></i> Clear Canvas
+            </button>
           </div>
-
           <div class="flex-1 bg-slate-900/90 rounded-2xl border border-slate-800 relative overflow-hidden flex items-center justify-center">
             <canvas id="sketchCanvas" class="w-full h-full cursor-crosshair block"></canvas>
           </div>
         </div>
 
-        <!-- View 3: Sleep Zone & Mindfulness Bedtime -->
-        <div id="view-bedtime" class="view-panel flex-1 hidden p-4 md:p-6 overflow-y-auto space-y-6">
-          <div class="glass-card p-6 rounded-2xl border border-slate-800 text-center max-w-xl mx-auto space-y-5 my-auto">
-            <div class="w-16 h-16 rounded-2xl bg-indigo-500/10 border border-indigo-500/20 text-indigo-400 flex items-center justify-center text-3xl mx-auto">
-              <i class="fa-solid fa-moon"></i>
-            </div>
-            <div>
-              <h2 class="text-xl font-bold text-slate-100">Bedtime & Relaxation Space</h2>
-              <p class="text-sm text-slate-400 mt-1">Wind down together. Trigger sleep frequency soundscapes or send a goodnight note to room members.</p>
-            </div>
-
-            <!-- Goodnight Note Creator -->
-            <div class="bg-slate-900/80 p-4 rounded-xl border border-slate-800 text-left space-y-3">
-              <label class="text-xs font-semibold text-slate-300 uppercase block">Send Goodnight / Morning Note</label>
-              <textarea id="bedtimeNoteInput" rows="2" placeholder="Sweet dreams! See you tomorrow at 9 AM..." class="w-full bg-slate-950 border border-slate-800 text-xs text-slate-200 p-3 rounded-xl focus:outline-none focus:border-indigo-500"></textarea>
-              <button onclick="sendBedtimeNote()" class="w-full py-2 bg-indigo-600 hover:bg-indigo-500 text-white rounded-xl text-xs font-medium transition flex items-center justify-center gap-2">
-                <i class="fa-solid fa-paper-plane"></i> Post Note
-              </button>
-            </div>
-
-            <!-- Sleep Timer Fast Triggers -->
-            <div class="pt-2 grid grid-cols-2 gap-3">
-              <button onclick="activateSleepMode('rain', 30)" class="p-4 rounded-xl bg-slate-900 border border-slate-800 hover:border-indigo-500/50 transition text-left">
-                <div class="font-semibold text-slate-200 text-sm">30 Min Rain Sleep</div>
-                <div class="text-xs text-slate-500 mt-1">Gentle rainfall & sleep timer</div>
-              </button>
-              <button onclick="activateSleepMode('space', 60)" class="p-4 rounded-xl bg-slate-900 border border-slate-800 hover:border-indigo-500/50 transition text-left">
-                <div class="font-semibold text-slate-200 text-sm">60 Min Deep Space</div>
-                <div class="text-xs text-slate-500 mt-1">Ambient frequency meditation</div>
-              </button>
-            </div>
-          </div>
-        </div>
-
-        <!-- View 4: Shared Photo Gallery / Board -->
-        <div id="view-photowall" class="view-panel flex-1 hidden p-4 md:p-6 overflow-y-auto space-y-4">
-          <div class="glass-card p-4 rounded-2xl border border-slate-800 flex flex-col sm:flex-row gap-3 items-center justify-between">
-            <div class="w-full sm:w-auto flex-1 flex gap-2">
-              <input type="text" id="photoUrlInput" placeholder="Paste image link URL (e.g. https://images.unsplash.com/...)" class="w-full bg-slate-900 border border-slate-800 text-slate-200 text-sm px-4 py-2 rounded-xl focus:outline-none focus:border-indigo-500">
-              <button onclick="addPhotoToGallery()" class="px-4 py-2 bg-indigo-600 hover:bg-indigo-500 text-white rounded-xl text-sm font-medium transition shrink-0 flex items-center gap-1.5">
-                <i class="fa-solid fa-plus"></i> Add Photo
-              </button>
-            </div>
-          </div>
-
-          <!-- Photo Cards Grid -->
-          <div id="photoGrid" class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
-            <!-- Photos injected dynamically -->
-          </div>
-        </div>
-
-      </main>
-
-      <!-- Right Sidebar: Room Chat & Activity -->
-      <aside class="w-80 glass-panel shrink-0 border-l border-slate-800/80 flex flex-col hidden sm:flex">
-        <div class="p-4 border-b border-slate-800 flex items-center justify-between">
-          <h2 class="font-semibold text-slate-200 flex items-center gap-2 text-sm uppercase tracking-wider">
-            <i class="fa-solid fa-comments text-indigo-400"></i> Room Chat
-          </h2>
-          <span id="onlineCount" class="text-xs bg-emerald-500/10 text-emerald-400 px-2 py-0.5 rounded-full font-medium border border-emerald-500/20">1 Active</span>
-        </div>
-
-        <!-- Chat Stream -->
-        <div id="chatStream" class="flex-1 overflow-y-auto p-4 space-y-3">
-          <!-- Messages -->
-        </div>
-
-        <!-- Chat Input -->
-        <form onsubmit="sendChatMessage(event)" class="p-3 border-t border-slate-800 bg-slate-950/40 flex items-center gap-2">
-          <input type="text" id="chatInput" placeholder="Type a message..." class="bg-slate-900 border border-slate-800 text-xs text-slate-200 px-3 py-2.5 rounded-xl flex-1 focus:outline-none focus:border-indigo-500">
-          <button type="submit" class="p-2.5 bg-indigo-600 hover:bg-indigo-500 text-white rounded-xl text-xs transition">
-            <i class="fa-solid fa-paper-plane"></i>
-          </button>
-        </form>
-      </aside>
-
-    </div>
-  </div>
-
-  <!-- Room Join / Options Modal -->
-  <div id="roomModal" class="fixed inset-0 bg-black/80 backdrop-blur-md z-50 flex items-center justify-center p-4 hidden">
-    <div class="glass-panel w-full max-w-md p-6 rounded-2xl border border-slate-800 space-y-5">
-      <div class="flex items-center justify-between">
-        <h3 class="text-lg font-bold text-white flex items-center gap-2">
-          <i class="fa-solid fa-door-open text-indigo-400"></i> Enter SyncSpace Room
-        </h3>
-        <button onclick="closeRoomModal()" class="text-slate-400 hover:text-white"><i class="fa-solid fa-xmark"></i></button>
-      </div>
-
-      <div class="space-y-3">
-        <div>
-          <label class="text-xs font-semibold text-slate-400 uppercase block mb-1">Room Code / ID</label>
-          <input type="text" id="modalRoomInput" placeholder="e.g. study-hub-123" class="w-full bg-slate-900 border border-slate-800 text-sm text-slate-200 px-3.5 py-2.5 rounded-xl focus:outline-none focus:border-indigo-500">
-        </div>
-        <div>
-          <label class="text-xs font-semibold text-slate-400 uppercase block mb-1">Your Display Name</label>
-          <input type="text" id="modalNameInput" placeholder="e.g. Alex" class="w-full bg-slate-900 border border-slate-800 text-sm text-slate-200 px-3.5 py-2.5 rounded-xl focus:outline-none focus:border-indigo-500">
-        </div>
-      </div>
-
-      <div class="flex gap-2 pt-2">
-        <button onclick="applyRoomChange()" class="w-full py-2.5 bg-indigo-600 hover:bg-indigo-500 text-white rounded-xl text-sm font-medium transition">Join Room</button>
-      </div>
-    </div>
-  </div>
-
-  <!-- YouTube IFrame API -->
-  <script src="https://www.youtube.com/iframe_api"></script>
-
-  <!-- Firebase & App Logic Script -->
-  <script type="module">
-    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
-    import { getDatabase, ref, set, get, onValue, push, child, update, remove } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-database.js";
-
-    // --- YOUR FIREBASE CONFIGURATION ---
-    const firebaseConfig = {
-      apiKey: "AIzaSyAUsydn3vR0rxcjxpwnkhr_AGM6LjIW894",
-      authDomain: "longdistance-330d0.firebaseapp.com",
-      databaseURL: "https://longdistance-330d0-default-rtdb.firebaseio.com",
-      projectId: "longdistance-330d0",
-      storageBucket: "longdistance-330d0.firebasestorage.app",
-      messagingSenderId: "114298454958",
-      appId: "1:114298454958:web:fc9cdc4b772dbf897a3e3f",
-      measurementId: "G-0VSMWGF48K"
-    };
-
-    // Initialize Firebase explicitly passing the database URL to ensure connection binding
-    const app = initializeApp(firebaseConfig);
-    const database = getDatabase(app, "https://longdistance-330d0-default-rtdb.firebaseio.com");
-
-    // ==========================================
-    // GLOBAL STATE & VARIABLES
-    // ==========================================
-    let currentRoom = "main-room";
-    let currentUser = "User_" + Math.floor(100 + Math.random() * 900);
-    let masterMuted = false;
-    let timerInterval = null;
-    let timerSecondsRemaining = 0;
-
-    let audioCtx = null;
-    const ambientNodes = {};
-
-    let ytPlayer = null;
-    let isYoutubeReady = false;
-    let currentVideoType = 'youtube';
-    let isSyncing = false;
-
-    let isDrawing = false;
-    let canvasTool = 'pen';
-    let canvasCtx = null;
-
-    const SOUNDSCAPES = [
-      { id: 'rain', name: 'Rain & Thunder', icon: 'fa-cloud-showers-heavy', type: 'noise' },
-      { id: 'fire', name: 'Cozy Fireplace', icon: 'fa-fire', type: 'crackle' },
-      { id: 'waves', name: 'Ocean Waves', icon: 'fa-water', type: 'waves' },
-      { id: 'space', name: 'Deep Space', icon: 'fa-user-astronaut', type: 'space' },
-      { id: 'forest', name: 'Forest Night', icon: 'fa-tree', type: 'forest' }
-    ];
-
-    let photoGallery = [
-      "https://images.unsplash.com/photo-1518173946687-a4c8a383392e?auto=format&fit=crop&w=600&q=80",
-      "https://images.unsplash.com/photo-1507525428034-b723cf961d3e?auto=format&fit=crop&w=600&q=80"
-    ];
-
-    // ==========================================
-    // INITIALIZATION & URL ROOM ROUTING
-    // ==========================================
-    window.addEventListener('load', () => {
-      const hash = window.location.hash;
-      if (hash && hash.includes('room=')) {
-        currentRoom = hash.split('room=')[1].split('&')[0];
-      } else {
-        currentRoom = "room-" + Math.random().toString(36).substring(2, 8);
-        window.location.hash = `room=${currentRoom}`;
-      }
-      
-      const displayElem = document.getElementById('currentRoomDisplay');
-      if (displayElem) displayElem.innerText = currentRoom;
-
-      initAmbientGrid();
-      initSketchpad();
-      renderPhotoGallery();
-      initNativeVideoSync();
-      initFirebaseSync();
-
-      addSystemChatMessage(`Welcome to SyncSpace! Joined room: ${currentRoom}`);
-    });
-
-    function getAudioContext() {
-      if (!audioCtx) {
-        const AudioContextClass = window.AudioContext || window.webkitAudioContext;
-        audioCtx = new AudioContextClass();
-      }
-      if (audioCtx.state === 'suspended') {
-        audioCtx.resume();
-      }
-      return audioCtx;
-    }
-
-    // ==========================================
-    // 1. PROCEDURAL WEB AUDIO SYNTHESIZER
-    // ==========================================
-    window.initAmbientGrid = function() {
-      const container = document.getElementById('ambientSoundGrid');
-      if (!container) return;
-      container.innerHTML = '';
-
-      SOUNDSCAPES.forEach(snd => {
-        const card = document.createElement('div');
-        card.className = "glass-card p-3 rounded-xl border border-slate-800/80 flex flex-col gap-2 transition hover:border-slate-700";
-        card.id = `card-${snd.id}`;
-        card.innerHTML = `
-          <div class="flex items-center justify-between">
-            <div class="flex items-center gap-2.5">
-              <div id="icon-bg-${snd.id}" class="w-8 h-8 rounded-lg bg-slate-800 text-slate-400 flex items-center justify-center transition">
-                <i class="fa-solid ${snd.icon} text-sm"></i>
-              </div>
-              <span class="text-xs font-semibold text-slate-200">${snd.name}</span>
-            </div>
-            <button onclick="toggleAmbientSound('${snd.id}')" id="btn-${snd.id}" class="p-1.5 px-3 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs font-medium transition flex items-center gap-1.5">
-              <i class="fa-solid fa-play text-[10px]"></i> Play
-            </button>
-          </div>
-          <div class="flex items-center gap-2">
-            <i class="fa-solid fa-volume-low text-[10px] text-slate-500"></i>
-            <input type="range" min="0" max="1" step="0.01" value="0.5" id="vol-${snd.id}" oninput="setAmbientVolume('${snd.id}', this.value)" class="w-full accent-indigo-500 h-1 bg-slate-800 rounded-lg appearance-none cursor-pointer">
-          </div>
-        `;
-        container.appendChild(card);
-      });
-    }
-
-    window.toggleAmbientSound = function(id) {
-      if (ambientNodes[id] && ambientNodes[id].playing) {
-        stopProceduralSound(id);
-      } else {
-        startProceduralSound(id);
-      }
-    }
-
-    function startProceduralSound(id) {
-      const ctx = getAudioContext();
-      const soundDef = SOUNDSCAPES.find(s => s.id === id);
-      if (!soundDef) return;
-
-      const masterGain = ctx.createGain();
-      const volInput = document.getElementById(`vol-${id}`);
-      const initialVol = volInput ? parseFloat(volInput.value) || 0.5 : 0.5;
-      masterGain.gain.value = masterMuted ? 0 : initialVol;
-      masterGain.connect(ctx.destination);
-
-      let cleanupFunc = null;
-
-      if (soundDef.type === 'noise') {
-        const bufferSize = ctx.sampleRate * 2;
-        const buffer = ctx.createBuffer(1, bufferSize, ctx.sampleRate);
-        const data = buffer.getChannelData(0);
-        for (let i = 0; i < bufferSize; i++) {
-          data[i] = (Math.random() * 2 - 1) * 0.1;
-        }
-        const noise = ctx.createBufferSource();
-        noise.buffer = buffer;
-        noise.loop = true;
-
-        const filter = ctx.createBiquadFilter();
-        filter.type = 'lowpass';
-        filter.frequency.value = 800;
-
-        noise.connect(filter);
-        filter.connect(masterGain);
-        noise.start();
-
-        cleanupFunc = () => { noise.stop(); noise.disconnect(); };
-      } else if (soundDef.type === 'waves') {
-        const osc = ctx.createOscillator();
-        const lfo = ctx.createOscillator();
-        const lfoGain = ctx.createGain();
-
-        osc.type = 'sine';
-        osc.frequency.value = 160;
-        lfo.frequency.value = 0.25;
-        lfoGain.gain.value = 0.4;
-
-        lfo.connect(masterGain.gain);
-        osc.connect(masterGain);
-
-        osc.start();
-        lfo.start();
-
-        cleanupFunc = () => { osc.stop(); lfo.stop(); };
-      } else if (soundDef.type === 'space') {
-        const osc1 = ctx.createOscillator();
-        const osc2 = ctx.createOscillator();
-        osc1.type = 'sine';
-        osc2.type = 'triangle';
-        osc1.frequency.value = 65;
-        osc2.frequency.value = 65.4;
-
-        osc1.connect(masterGain);
-        osc2.connect(masterGain);
-        osc1.start();
-        osc2.start();
-
-        cleanupFunc = () => { osc1.stop(); osc2.stop(); };
-      } else {
-        const osc = ctx.createOscillator();
-        osc.type = 'sine';
-        osc.frequency.value = id === 'fire' ? 110 : 280;
-
-        const filter = ctx.createBiquadFilter();
-        filter.type = 'bandpass';
-        filter.frequency.value = 350;
-
-        osc.connect(filter);
-        filter.connect(masterGain);
-        osc.start();
-
-        cleanupFunc = () => { osc.stop(); };
-      }
-
-      ambientNodes[id] = {
-        playing: true,
-        gainNode: masterGain,
-        cleanup: cleanupFunc
-      };
-
-      updateAmbientUI(id, true);
-    }
-
-    function stopProceduralSound(id) {
-      if (ambientNodes[id]) {
-        if (ambientNodes[id].cleanup) ambientNodes[id].cleanup();
-        ambientNodes[id].playing = false;
-      }
-      updateAmbientUI(id, false);
-    }
-
-    window.setAmbientVolume = function(id, val) {
-      if (ambientNodes[id] && ambientNodes[id].gainNode) {
-        ambientNodes[id].gainNode.gain.value = masterMuted ? 0 : parseFloat(val);
-      }
-    }
-
-    window.toggleMasterMute = function() {
-      masterMuted = !masterMuted;
-      const icon = document.getElementById('masterMuteIcon');
-      if (icon) icon.className = masterMuted ? "fa-solid fa-volume-xmark text-rose-400" : "fa-solid fa-volume-high";
-
-      SOUNDSCAPES.forEach(snd => {
-        if (ambientNodes[snd.id] && ambientNodes[snd.id].gainNode) {
-          const volElem = document.getElementById(`vol-${snd.id}`);
-          const targetVol = masterMuted ? 0 : (volElem ? parseFloat(volElem.value) : 0.5);
-          ambientNodes[snd.id].gainNode.gain.value = targetVol;
-        }
-      });
-    }
-
-    function updateAmbientUI(id, isPlaying) {
-      const btn = document.getElementById(`btn-${id}`);
-      const iconBg = document.getElementById(`icon-bg-${id}`);
-      if (!btn) return;
-      if (isPlaying) {
-        btn.className = "p-1.5 px-3 rounded-lg bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-medium transition flex items-center gap-1.5 shadow-sm";
-        btn.innerHTML = `<i class="fa-solid fa-pause text-[10px]"></i> Pause`;
-        if (iconBg) iconBg.className = "w-8 h-8 rounded-lg bg-indigo-600/20 text-indigo-400 flex items-center justify-center transition border border-indigo-500/30";
-      } else {
-        btn.className = "p-1.5 px-3 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs font-medium transition flex items-center gap-1.5";
-        btn.innerHTML = `<i class="fa-solid fa-play text-[10px]"></i> Play`;
-        if (iconBg) iconBg.className = "w-8 h-8 rounded-lg bg-slate-800 text-slate-400 flex items-center justify-center transition";
-      }
-    }
-
-    window.setSoundTimer = function(minutes) {
-      clearInterval(timerInterval);
-      if (minutes <= 0) {
-        timerSecondsRemaining = 0;
-        const tDisp = document.getElementById('timerDisplay');
-        if (tDisp) tDisp.innerText = "Off";
-        return;
-      }
-      timerSecondsRemaining = minutes * 60;
-      updateTimerDisplay();
-
-      timerInterval = setInterval(() => {
-        timerSecondsRemaining--;
-        updateTimerDisplay();
-        if (timerSecondsRemaining <= 0) {
-          clearInterval(timerInterval);
-          SOUNDSCAPES.forEach(snd => stopProceduralSound(snd.id));
-          const tDisp = document.getElementById('timerDisplay');
-          if (tDisp) tDisp.innerText = "Off";
-        }
-      }, 1000);
-    }
-
-    function updateTimerDisplay() {
-      const m = Math.floor(timerSecondsRemaining / 60);
-      const s = timerSecondsRemaining % 60;
-      const tDisp = document.getElementById('timerDisplay');
-      if (tDisp) tDisp.innerText = `${m}:${s < 10 ? '0' : ''}${s}`;
-    }
-
-    // ==========================================
-    // 2. WATCH TOGETHER VIDEO ENGINE
-    // ==========================================
-    window.onYouTubeIframeAPIReady = function() {
-      try {
-        ytPlayer = new YT.Player('youtubePlayer', {
-          height: '100%',
-          width: '100%',
-          videoId: 'jfKfPfyJRdk',
-          playerVars: { 'autoplay': 0, 'controls': 1, 'modestbranding': 1 },
-          events: {
-            'onReady': () => { isYoutubeReady = true; },
-            'onStateChange': onYouTubeStateChange
-          }
-        });
-      } catch (e) {
-        console.error("YouTube API init error:", e);
-      }
-    }
-
-    function onYouTubeStateChange(event) {
-      if (isSyncing || !ytPlayer || typeof ytPlayer.getCurrentTime !== 'function') return;
-      if (event.data === YT.PlayerState.PLAYING || event.data === YT.PlayerState.PAUSED) {
-        const time = ytPlayer.getCurrentTime();
-        pushVideoState({
-          type: 'youtube',
-          videoId: getCurrentYouTubeId(),
-          isPlaying: event.data === YT.PlayerState.PLAYING,
-          currentTime: time,
-          timestamp: Date.now()
-        });
-      }
-    }
-
-    function getCurrentYouTubeId() {
-      if (!ytPlayer || typeof ytPlayer.getVideoUrl !== 'function') return 'jfKfPfyJRdk';
-      const url = ytPlayer.getVideoUrl();
-      const match = url ? url.match(/[?&]v=([^&]+)/) : null;
-      return match ? match[1] : 'jfKfPfyJRdk';
-    }
-
-    window.loadUniversalVideo = function() {
-      const inputElem = document.getElementById('videoUrlInput');
-      if (!inputElem) return;
-      const input = inputElem.value.trim();
-      if (!input) return;
-
-      if (input.includes('youtube.com') || input.includes('youtu.be')) {
-        let videoId = '';
-        if (input.includes('youtu.be/')) {
-          videoId = input.split('youtu.be/')[1].split('?')[0];
-        } else if (input.includes('watch?v=')) {
-          videoId = input.split('watch?v=')[1].split('&')[0];
-        }
-        if (videoId) {
-          switchVideoPlayer('youtube');
-          if (isYoutubeReady && ytPlayer) {
-            ytPlayer.loadVideoById(videoId);
-          }
-          pushVideoState({ type: 'youtube', videoId: videoId, isPlaying: true, currentTime: 0, timestamp: Date.now() });
-        }
-      } else {
-        switchVideoPlayer('html5');
-        const vPlayer = document.getElementById('nativeVideoPlayer');
-        const vSource = document.getElementById('nativeVideoSource');
-        if (vPlayer && vSource) {
-          vSource.src = input;
-          vPlayer.load();
-          vPlayer.play();
-        }
-        pushVideoState({ type: 'html5', url: input, isPlaying: true, currentTime: 0, timestamp: Date.now() });
-      }
-    }
-
-    window.loadPreset = function(type, val) {
-      if (type === 'youtube') {
-        switchVideoPlayer('youtube');
-        if (isYoutubeReady && ytPlayer) {
-          ytPlayer.loadVideoById(val);
-        }
-        pushVideoState({ type: 'youtube', videoId: val, isPlaying: true, currentTime: 0, timestamp: Date.now() });
-      } else if (type === 'mp4') {
-        switchVideoPlayer('html5');
-        const vPlayer = document.getElementById('nativeVideoPlayer');
-        const vSource = document.getElementById('nativeVideoSource');
-        if (vPlayer && vSource) {
-          vSource.src = val;
-          vPlayer.load();
-          vPlayer.play();
-        }
-        pushVideoState({ type: 'html5', url: val, isPlaying: true, currentTime: 0, timestamp: Date.now() });
-      }
-    }
-
-    function switchVideoPlayer(mode) {
-      currentVideoType = mode;
-      const ytContainer = document.getElementById('youtubePlayerContainer');
-      const html5Container = document.getElementById('html5PlayerContainer');
-      if (mode === 'youtube') {
-        if (ytContainer) ytContainer.classList.remove('hidden');
-        if (html5Container) html5Container.classList.add('hidden');
-      } else {
-        if (ytContainer) ytContainer.classList.add('hidden');
-        if (html5Container) html5Container.classList.remove('hidden');
-      }
-    }
-
-    function initNativeVideoSync() {
-      const vPlayer = document.getElementById('nativeVideoPlayer');
-      if (!vPlayer) return;
-      vPlayer.addEventListener('play', () => {
-        if (isSyncing) return;
-        const vSource = document.getElementById('nativeVideoSource');
-        pushVideoState({ type: 'html5', url: vSource ? vSource.src : '', isPlaying: true, currentTime: vPlayer.currentTime, timestamp: Date.now() });
-      });
-      vPlayer.addEventListener('pause', () => {
-        if (isSyncing) return;
-        const vSource = document.getElementById('nativeVideoSource');
-        pushVideoState({ type: 'html5', url: vSource ? vSource.src : '', isPlaying: false, currentTime: vPlayer.currentTime, timestamp: Date.now() });
-      });
-    }
-
-    // ==========================================
-    // 3. COLLABORATIVE SKETCHPAD
-    // ==========================================
-    function initSketchpad() {
-      const canvas = document.getElementById('sketchCanvas');
-      if (!canvas) return;
-      canvasCtx = canvas.getContext('2d');
-
-      function resizeCanvas() {
-        if (!canvas || !canvas.parentElement) return;
-        const rect = canvas.parentElement.getBoundingClientRect();
-        canvas.width = rect.width || 600;
-        canvas.height = rect.height || 400;
-      }
-      resizeCanvas();
-      window.addEventListener('resize', resizeCanvas);
-
-      canvas.addEventListener('mousedown', startDrawing);
-      canvas.addEventListener('mousemove', drawOnCanvas);
-      canvas.addEventListener('mouseup', stopDrawing);
-      canvas.addEventListener('mouseleave', stopDrawing);
-
-      canvas.addEventListener('touchstart', (e) => { e.preventDefault(); if(e.touches[0]) startDrawing(e.touches[0]); }, { passive: false });
-      canvas.addEventListener('touchmove', (e) => { e.preventDefault(); if(e.touches[0]) drawOnCanvas(e.touches[0]); }, { passive: false });
-      canvas.addEventListener('touchend', stopDrawing);
-    }
-
-    function startDrawing(e) {
-      isDrawing = true;
-      const canvas = document.getElementById('sketchCanvas');
-      if (!canvas) return;
-      const rect = canvas.getBoundingClientRect();
-      const x = (e.clientX - rect.left) / canvas.width;
-      const y = (e.clientY - rect.top) / canvas.height;
-      window.lastX = x;
-      window.lastY = y;
-    }
-
-    function drawOnCanvas(e) {
-      if (!isDrawing) return;
-      const canvas = document.getElementById('sketchCanvas');
-      if (!canvas) return;
-      const rect = canvas.getBoundingClientRect();
-      const x = (e.clientX - rect.left) / canvas.width;
-      const y = (e.clientY - rect.top) / canvas.height;
-
-      const colorPicker = document.getElementById('canvasColorPicker');
-      const sizeInput = document.getElementById('canvasLineWidth');
-
-      const color = canvasTool === 'eraser' ? '#0f172a' : (colorPicker ? colorPicker.value : '#6366f1');
-      const size = sizeInput ? parseInt(sizeInput.value) || 4 : 4;
-
-      drawLineLocally(window.lastX, window.lastY, x, y, color, size);
-      pushCanvasStroke({ x0: window.lastX, y0: window.lastY, x1: x, y1: y, color, size });
-
-      window.lastX = x;
-      window.lastY = y;
-    }
-
-    function stopDrawing() {
-      isDrawing = false;
-    }
-
-    function drawLineLocally(x0, y0, x1, y1, color, size) {
-      if (!canvasCtx) return;
-      const canvas = document.getElementById('sketchCanvas');
-      if (!canvas) return;
-      canvasCtx.beginPath();
-      canvasCtx.moveTo(
+        <!-- View 3: Bedtime -->
+        <div id="view-bedtime" class="view-panel flex-1 hidden p-4 md:p-
